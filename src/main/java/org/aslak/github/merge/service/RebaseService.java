@@ -1,6 +1,7 @@
 package org.aslak.github.merge.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class RebaseService {
                 Commit commit = new Commit(foundCommit.getName(), foundCommit.getFullMessage(), foundCommit.getAuthorIdent().getName());
                 commits.add(commit);
             }
+            Collections.reverse(commits);
             return commits;
         } catch(Exception e) {
             throw new RuntimeException("Could not open Git repository", e);
@@ -88,7 +90,6 @@ public class RebaseService {
                 public void prepareSteps(List<RebaseTodoLine> steps) {
                     for(int i = 0; i < steps.size(); i++) {
                         RebaseTodoLine step = steps.get(i);
-                        System.out.println(step.getCommit().toString() + " " + step.getAction());
                         if(!mappedCommits.containsKey(step.getCommit())) {
                             steps.remove(i);
                             i--;
@@ -105,6 +106,7 @@ public class RebaseService {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
+                        System.out.println(step.getCommit().toString() + " " + step.getAction());
                     }
                 }
 
