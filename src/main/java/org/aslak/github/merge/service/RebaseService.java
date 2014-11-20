@@ -156,7 +156,7 @@ public class RebaseService {
     private Map<AbbreviatedObjectId, Commit> map(List<Commit> commits) {
         Map<AbbreviatedObjectId, Commit> mapped = new HashMap<>();
         for(Commit commit : commits) {
-            mapped.put(AbbreviatedObjectId.fromString(commit.getSha().substring(0, 7)), commit);
+            mapped.put(AbbreviatedObjectId.fromString(commit.getId().substring(0, 7)), commit);
         }
         return mapped;
     }

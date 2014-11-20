@@ -11,15 +11,15 @@ public class PullRequest {
         this.source = source;
         this.target = target;
     }
-    
+
     public int getNumber() {
         return number;
     }
-    
+
     public RepositoryInfo getSource() {
         return source;
     }
-    
+
     public RepositoryInfo getTarget() {
         return target;
     }

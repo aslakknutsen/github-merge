@@ -9,13 +9,13 @@ public class Commit {
         DELETE
     }
 
-    private String sha;
+    private String id;
     private String message;
     private String author;
     private State state = State.PICK;
     
     public Commit(String sha, String message, String author) {
-        this.sha = sha;
+        this.id = sha;
         this.message = message;
         this.author = author;
     }
@@ -28,8 +28,8 @@ public class Commit {
         return message;
     }
     
-    public String getSha() {
-        return sha;
+    public String getId() {
+        return id;
     }
     
     public State getState() {
