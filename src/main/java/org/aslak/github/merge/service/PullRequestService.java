@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.aslak.github.merge.model.PullRequest;
+import org.aslak.github.merge.rest.GithubUtil;
+import org.kohsuke.github.GitHub;
 
 public class PullRequestService {
 
@@ -12,8 +14,30 @@ public class PullRequestService {
     public PullRequestService() {
         this.store = new HashSet<>();
     }
+
+    public PullRequest get(String user, String repo, int pull) {
+        PullRequest request = locate(user, repo, pull);
+        if(request == null) {
+            request = fetch(user, repo, pull);
+            store(request);
+        }
+        return request;
+    }
     
-    public PullRequest locate(String user, String repo, int pull) {
+    private PullRequest fetch(String user, String repo, int pull) {
+        try {
+            return GithubUtil.toPullRequest(
+                    GitHub.connectUsingOAuth("a7d0b4356be94497a0964a0005ce09c671d616e9")
+                        .getOrganization(user)
+                        .getRepository(repo)
+                        .getPullRequest(pull));
+
+        } catch (Exception e) {
+            throw new RuntimeException("Could not fetch PullRequest from GitHub for " + user + "/" + repo + "/" + pull, e);
+        }
+    }
+
+    private PullRequest locate(String user, String repo, int pull) {
         for(PullRequest request : store) {
             if(
                     request.getSource().getUser().equals(user) &&
@@ -27,5 +51,9 @@ public class PullRequestService {
     
     public void store(PullRequest pullrequest) {
         this.store.add(pullrequest);
+    }
+
+    public void delete(PullRequest pullRequest) {
+        this.store.remove(pullRequest);
     }
 }
