@@ -24,6 +24,7 @@ public class RebaseServiceTest {
         Assert.assertNotNull(commits);
         commits.get(0).setState(State.REWORD);
         commits.get(0).setMessage("B");
+        commits.get(1).setState(State.FIXUP);
         rebase.rebase(storage, request, commits);
         
         List<Commit> newCommits = rebase.status(storage, request);

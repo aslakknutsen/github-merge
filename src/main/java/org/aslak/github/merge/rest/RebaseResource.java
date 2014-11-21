@@ -3,7 +3,9 @@ package org.aslak.github.merge.rest;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.ws.rs.GET;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -35,27 +37,45 @@ public class RebaseResource {
     @Path("{user}/{repo}/{pull}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response status(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull) {
-        PullRequest pullRequest = pullRequestService.locate(user, repo, pull);
+        PullRequest pullRequest = pullRequestService.get(user, repo, pull);
         if(pullRequest == null) {
             return Response.status(Status.NOT_FOUND).build();
         }
-        
+
         LocalStorage storage = repositoryService.get(pullRequest);
         if(storage == null) {
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
-        
+
         List<Commit> commits = rebaseService.status(storage, pullRequest);
         if(commits == null) {
             return Response.noContent().build();
         }
-        return Response.ok(commits).build();
+        return Response.ok(JSONUtil.commitsToJson(commits)).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @OPTIONS
+    @Path("{user}/{repo}/{pull}")
+    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull) {
+        return Response.ok().header("Allow", "POST, GET, OPTIONS, HEAD").header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "Content-Type").build();
     }
 
     @POST
     @Path("{user}/{repo}/{pull}")
-    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull, List<Commit> commits) {
-        return Response.ok().build();
+    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull, JsonArray commitsArray) {
+        List<Commit> commits = JSONUtil.commitsFromJson(commitsArray);
+        PullRequest pullRequest = pullRequestService.get(user, repo, pull);
+        if(pullRequest == null) {
+            return Response.status(Status.NOT_FOUND).build();
+        }
+
+        LocalStorage storage = repositoryService.get(pullRequest);
+        if(storage == null) {
+            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+        }
+
+        rebaseService.rebase(storage, pullRequest, commits);
+        return Response.ok().header("Access-Control-Allow-Origin", "*").build();
     }
 
     @POST

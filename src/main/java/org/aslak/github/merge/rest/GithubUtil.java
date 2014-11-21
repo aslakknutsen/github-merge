@@ -4,6 +4,7 @@ import javax.json.JsonObject;
 
 import org.aslak.github.merge.model.PullRequest;
 import org.aslak.github.merge.model.RepositoryInfo;
+import org.kohsuke.github.GHPullRequest;
 
 public class GithubUtil {
 
@@ -21,6 +22,24 @@ public class GithubUtil {
         );
         return new PullRequest(
                 object.getInt("number"),
+                source,
+                target);
+    }
+
+    public static PullRequest toPullRequest(GHPullRequest object) {
+
+        RepositoryInfo source = new RepositoryInfo(
+                object.getHead().getUser().getLogin(),
+                object.getHead().getRepository().getName(),
+                object.getHead().getRef()
+        );
+        RepositoryInfo target = new RepositoryInfo(
+                object.getBase().getUser().getLogin(),
+                object.getBase().getRepository().getName(),
+                object.getBase().getRef()
+        );
+        return new PullRequest(
+                object.getNumber(),
                 source,
                 target);
     }
