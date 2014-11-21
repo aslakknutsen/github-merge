@@ -8,11 +8,12 @@ import org.aslak.github.merge.model.Commit.State;
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class RebaseServiceTest {
 
-    @Test
+    @Test @Ignore
     public void shouldBeAbleToList() throws Exception {
         PullRequest request = TestUtils.getPullRequest();
         RepositoryService repo = new RepositoryService();
