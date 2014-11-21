@@ -3,10 +3,13 @@ package org.aslak.github.merge.service;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.aslak.github.merge.model.PullRequest;
 import org.aslak.github.merge.rest.GithubUtil;
 import org.kohsuke.github.GitHub;
 
+@ApplicationScoped
 public class PullRequestService {
 
     private Set<PullRequest> store;
@@ -40,8 +43,8 @@ public class PullRequestService {
     private PullRequest locate(String user, String repo, int pull) {
         for(PullRequest request : store) {
             if(
-                    request.getSource().getUser().equals(user) &&
-                    request.getSource().getRepository().equals(user) &&
+                    request.getTarget().getUser().equals(user) &&
+                    request.getTarget().getRepository().equals(repo) &&
                     request.getNumber() == pull) {
                 return request;
             }
