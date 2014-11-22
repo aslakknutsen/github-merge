@@ -128,27 +128,43 @@
 	App = Ember.Application.create();
 
 	App.Router.map(function() {
-		this.resource('commits', { path: '/' });
+		this.resource('commits', { path: '/:user/:repository/:pullrequest' });
 	});
-  	//var base = 'http://localhost:8080/merger/api/rebase/discourse/discourse/2918';
-  	var base = 'http://localhost:8080/merger/api/rebase/arquillian/arquillian-cube/36';
-	var getStatus = function() {
-		return $.getJSON(base).then(function(response) {
+	var base = 'http://localhost:8080/merger/api/rebase/';
+	var getStatus = function(resource) {
+		//debugger
+		var url = base +  resource.user + '/' + resource.repository + '/' + resource.pullrequest;
+		return $.getJSON(url).then(function(response) {
 			var items = [];
 			response.forEach(function(item) {
 				items.push(App.Commit.create(item));
 			});
 			return items;
-		});		
+		});
 	}
+	var postRebase = function(resource, model) {
+		var url = base +  resource.user + '/' + resource.repository + '/' + resource.pullrequest;
+		return $.ajax({
+			url: url,
+			type: 'post',
+			contentType: 'application/json',
+			data: JSON.stringify(model)
+		});
+	};
 
 	App.CommitsRoute = Ember.Route.extend({
-		model: function() {
-			return getStatus();
+		model: function(params) {
+			return getStatus(params);
+		},
+		setupController: function(controller, model) {
+			var params = this.paramsFor(this.routeName);
+			controller.set('model', model);
+			controller.set('resource', params);
 		}
 	});
 	
 	App.CommitsController = Ember.ArrayController.extend({
+		resource: null, // set in route
     	assignIndex: function() {
     		//Ember.run.once(this, 'updateIndex');
     		this.updateIndex()
@@ -172,21 +188,12 @@
 			},
 			rebase: function() {
 				var self = this;
-				$.ajax({ 
-					url: base,
-					type: 'post',
-					contentType: 'application/json',
-					data: JSON.stringify(self.get('model')),
-					success: function( data, textStatus, jQxhr ){
-						getStatus().then(function(model) {
-							//debugger
-							self.set('model', model);	
-						});
-					},
-					error: function( jqXhr, textStatus, errorThrown ){
-						console.log( errorThrown ); 
-					}
-				}); 
+				var resource = this.get('resource')
+				postRebase(resource, this.get('model')).then(function() {
+					getStatus(resource).then(function(model) {
+						self.set('model', model);	
+					});
+				});
 			},
 			push: function() {
 
