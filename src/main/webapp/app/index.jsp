@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>Travling Merger</title>
+    <base href="<%=request.getAttribute("BASE_ROOT")%>" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <!--[if lt IE 9]>
       <script src='//html5shim.googlecode.com/svn/trunk/html5.js' type='text/javascript'></script>
@@ -133,15 +134,19 @@
   <script>
 	App = Ember.Application.create();
 
+	App.Router.reopen({
+		location: 'history'
+	});
+
 	App.Router.map(function() {
 		this.resource('commits', { path: '/:user/:repository/:pullrequest' });
 	});
-	var base = 'http://localhost:8080/merger/api/rebase/';
+	var base = '<%=request.getAttribute("BASE_ROOT")%>/api/rebase/';
 	var getStatus = function(resource) {
 		//debugger
 		var url = base +  resource.user + '/' + resource.repository + '/' + resource.pullrequest;
 		return $.getJSON(url).then(function(response) {
-			var items = [];
+			var items = [];
 			response.forEach(function(item) {
 				items.push(App.Commit.create(item));
 			});

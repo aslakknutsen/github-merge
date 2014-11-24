@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 public class HTML5RewriteFilter implements Filter {
 
     public static final Pattern PATTERN = Pattern.compile("(^.*/api/|\\.(css|js|png|jpg))");
-    public static final String APP_INDEX = "/app/index.html";
+    public static final String APP_INDEX = "/app/index.jsp";
     
     @Override
     public void init(FilterConfig filterConfig) throws ServletException { }
@@ -28,7 +28,7 @@ public class HTML5RewriteFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest)request;
-        request.setAttribute("BASE_ROOT", httpRequest.getContextPath() + APP_INDEX);
+        request.setAttribute("BASE_ROOT", httpRequest.getContextPath());
         
         if(PATTERN.matcher(httpRequest.getRequestURI()).find()) {
             chain.doFilter(request, response);
