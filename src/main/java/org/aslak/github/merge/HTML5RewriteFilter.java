@@ -11,10 +11,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
-@WebFilter(urlPatterns = {"/*"})
+@WebFilter(filterName= "HTML5RewriteFilter", urlPatterns = {"/*"})
 public class HTML5RewriteFilter implements Filter {
 
     public static final Pattern PATTERN = Pattern.compile("(^.*/api/|\\.(css|js|png|jpg))");
@@ -36,21 +34,6 @@ public class HTML5RewriteFilter implements Filter {
             chain.doFilter(request, response);
         } else {
             request.getRequestDispatcher(APP_INDEX).forward(request, response); 
-        }
-    }
-    
-    static class DelayedFlushWrapper extends HttpServletResponseWrapper {
-        
-        public DelayedFlushWrapper(HttpServletResponse response) {
-            super(response);
-        }
-        
-        @Override
-        public void flushBuffer() throws IOException {
-        }
-        
-        public void performFlish() throws IOException {
-            getResponse().flushBuffer();
         }
     }
 }
