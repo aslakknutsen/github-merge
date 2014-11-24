@@ -4,7 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
+import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.PullRequest;
 import org.aslak.github.merge.rest.GithubUtil;
 import org.kohsuke.github.GitHub;
@@ -13,6 +15,9 @@ import org.kohsuke.github.GitHub;
 public class PullRequestService {
 
     private Set<PullRequest> store;
+
+    @Inject
+    private CurrentUser currentUser;
     
     public PullRequestService() {
         this.store = new HashSet<>();
@@ -26,14 +31,20 @@ public class PullRequestService {
         }
         return request;
     }
-    
+
     private PullRequest fetch(String user, String repo, int pull) {
         try {
+            GitHub github;
+            if(currentUser== null) {
+                github = GitHub.connectAnonymously();
+            } else {
+                github = GitHub.connectUsingOAuth(currentUser.getAccessToken());
+            }
+
             return GithubUtil.toPullRequest(
-                    GitHub.connectAnonymously()
-                        .getOrganization(user)
-                        .getRepository(repo)
-                        .getPullRequest(pull));
+                        github.getOrganization(user)
+                            .getRepository(repo)
+                            .getPullRequest(pull));
 
         } catch (Exception e) {
             throw new RuntimeException("Could not fetch PullRequest from GitHub for " + user + "/" + repo + "/" + pull, e);
