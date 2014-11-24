@@ -32,6 +32,9 @@ public class RebaseService {
             ObjectId source = git.getRepository().resolve(String.valueOf(pullRequest.getNumber()));
             for(RevCommit foundCommit : git.log().addRange(target, source).call()) {
                 Commit commit = new Commit(foundCommit.getName(), foundCommit.getFullMessage(), foundCommit.getAuthorIdent().getName());
+                if(commit.getMessage().contains("squash!") || commit.getMessage().contains("fixup!")) {
+                    commit.setState(State.FIXUP);
+                }
                 commits.add(commit);
             }
             Collections.reverse(commits);
