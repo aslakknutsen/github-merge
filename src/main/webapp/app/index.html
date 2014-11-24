@@ -17,6 +17,12 @@
   			</a>
 		</div>
 		<div class="row">
+			<ul class="button-group right">
+				<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
+				<li><a title="Fixup all" {{action 'fixupAll'}} class="button tiny">Fixup all</a></li>
+			</ul>
+		</div>
+		<div class="row">
           <ol class="commits">
           {{#each commit in model}}
 		      <li class="commit row">
@@ -197,6 +203,18 @@
 			},
 			push: function() {
 
+			},
+			fixupAll: function() {
+				var commits = this.get('model');
+				for(var i = 1; i < commits.length; i++) {
+					commits[i].set('state', 'FIXUP');
+				}
+			},
+			pickAll: function() {
+				var commits = this.get('model');
+				for(var i = 1; i < commits.length; i++) {
+					commits[i].set('state', 'PICk');
+				}
 			}
 		}
 	});
