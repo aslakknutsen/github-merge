@@ -30,7 +30,7 @@ public class PullRequestService {
     private PullRequest fetch(String user, String repo, int pull) {
         try {
             return GithubUtil.toPullRequest(
-                    GitHub.connectUsingOAuth("a7d0b4356be94497a0964a0005ce09c671d616e9")
+                    GitHub.connectAnonymously()
                         .getOrganization(user)
                         .getRepository(repo)
                         .getPullRequest(pull));
