@@ -57,7 +57,7 @@
 			 </ul>
 		  </div>
 		  {{else}}
-		  <div class="small-8 column" {{bind-attr class=":small-8 :column isDelete isFixup"}}>
+		  <div {{bind-attr class=":small-8 :column isDelete isFixup"}}>
 			 <p class="title">{{get-message-head commit.message}}</p>
 			 <div class="meta">
 				{{commit.author}} authored <time>{{commit.date}}</time>
