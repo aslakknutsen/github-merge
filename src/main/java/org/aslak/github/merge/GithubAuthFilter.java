@@ -17,6 +17,7 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.aslak.github.merge.model.CurrentApp;
 import org.aslak.github.merge.model.CurrentUser;
 
 @WebFilter(filterName = "GithubAuthFilter")
@@ -25,21 +26,16 @@ public class GithubAuthFilter implements Filter {
     private static String AUTH_URL = "https://github.com/login/oauth/authorize";
     private static String AUTH_ACCESS_URL = "https://github.com/login/oauth/access_token";
 
-    private String AUTH_CLIENT_ID = System.getenv("GITHUB_CLIENT_ID");
-    private String AUTH_CLIENT_SECRET = System.getenv("GITHUB_CLIENT_SECRET");
     private String AUTH_SCOPE = "public_repo";
 
     @Inject
     private CurrentUser user;
 
+    @Inject
+    private CurrentApp app;
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        if(AUTH_CLIENT_ID == null || AUTH_CLIENT_ID.isEmpty()) {
-            throw new IllegalStateException("GITHUB_CLIENT_ID env variable is missing");
-        }
-        if(AUTH_CLIENT_SECRET == null || AUTH_CLIENT_SECRET.isEmpty()) {
-            throw new IllegalStateException("GITHUB_CLIENT_SECRET env variable is missing");
-        }
     }
 
     @Override
@@ -61,8 +57,8 @@ public class GithubAuthFilter implements Filter {
     private void getAccessToken(HttpServletRequest request, HttpServletResponse response) {
         StringBuilder sb = new StringBuilder();
         sb.append(AUTH_ACCESS_URL).append("?");
-        sb.append("client_id=").append(AUTH_CLIENT_ID).append("&");
-        sb.append("client_secret=").append(AUTH_CLIENT_SECRET).append("&");
+        sb.append("client_id=").append(app.getClientId()).append("&");
+        sb.append("client_secret=").append(app.getClientSecret()).append("&");
         sb.append("redirect_url=").append(request.getRequestURL()).append("&");
         sb.append("code=").append(user.getCode());
 
@@ -98,7 +94,7 @@ public class GithubAuthFilter implements Filter {
 
         StringBuilder sb = new StringBuilder();
         sb.append(AUTH_URL).append("?");
-        sb.append("client_id=").append(AUTH_CLIENT_ID).append("&");
+        sb.append("client_id=").append(app.getClientId()).append("&");
         sb.append("redirect_uri=").append(request.getRequestURL()).append("&");
         sb.append("scope=").append(AUTH_SCOPE).append("&");
         sb.append("state=").append(user.getState());
