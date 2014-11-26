@@ -3,6 +3,8 @@ package org.aslak.github.merge.service;
 import java.io.File;
 import java.nio.file.Paths;
 
+import javax.inject.Inject;
+
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
 import org.eclipse.jgit.api.CloneCommand;
@@ -12,7 +14,10 @@ import org.eclipse.jgit.lib.Repository;
 public class RepositoryService {
 
     private static final String WORK_FOLDER = "/tmp/mergerer/";
-    
+
+    @Inject
+    private NotificationService notification;
+
     public LocalStorage get(PullRequest request) {
         File path = calculatePath(request);
         if(path.exists() && new File(path, ".git").exists()) {
@@ -24,6 +29,7 @@ public class RepositoryService {
         
         Git git = null;
         
+        notification.sendMessage(request.getKey(), "Cloning repository from GitHub");
         CloneCommand command = Git.cloneRepository()
                     .setBranch(request.getTarget().getBranch())
                     .setDirectory(path)
@@ -31,10 +37,11 @@ public class RepositoryService {
         try {
             git = command.call();
         } catch(Exception e) {
+            notification.sendMessage(request.getKey(), "Failed to clone repository " + e.getMessage());
             throw new RuntimeException("Could not clone source repository " + request.getTarget().toHttpsURL(), e);
         }
         try {
-            
+            notification.sendMessage(request.getKey(), "Fetching pull request branch from GitHub");
             Repository repository = git.getRepository();
             repository.getConfig().setString("remote", "origin", "fetch", "+refs/pull/" + request.getNumber() + "/head:refs/remotes/origin/pr/" + request.getNumber());
             repository.getConfig().save();

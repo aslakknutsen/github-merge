@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.Commit.State;
 import org.aslak.github.merge.model.LocalStorage;
@@ -13,6 +15,7 @@ import org.aslak.github.merge.model.PullRequest;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ProgressMonitor;
@@ -21,6 +24,9 @@ import org.eclipse.jgit.lib.RebaseTodoLine.Action;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 public class RebaseService {
+
+    @Inject
+    private NotificationService notification;
     
     public List<Commit> status(LocalStorage storage, PullRequest pullRequest) {
         List<Commit> commits = new ArrayList<>();
@@ -49,7 +55,7 @@ public class RebaseService {
         }
     } 
     
-    public void rebase(LocalStorage storage, PullRequest pullRequest, final List<Commit> commits) {
+    public void rebase(LocalStorage storage, final PullRequest pullRequest, final List<Commit> commits) {
         Git git = null;
         try {
             git = open(storage);
@@ -63,29 +69,29 @@ public class RebaseService {
                 
                 @Override
                 public void update(int completed) {
-                    System.out.println("PM update " + completed);
+                    //System.out.println("PM update " + completed);
                 }
                 
                 @Override
                 public void start(int totalTasks) {
-                    System.out.println("PM start " + totalTasks);
-                    
+                    //System.out.println("PM start " + totalTasks);
                 }
                 
                 @Override
                 public boolean isCancelled() {
-                    System.out.println("PM isCancelled");
+                    //System.out.println("PM isCancelled");
                     return false;
                 }
                 
                 @Override
                 public void endTask() {
-                    System.out.println("PM endTask");
+                    //System.out.println("PM endTask");
                 }
                 
                 @Override
                 public void beginTask(String title, int totalWork) {
-                    System.out.println("PM beginTask " + title + " " + totalWork);
+                    notification.sendMessage(pullRequest.getKey(), "Begin Task: " + title);
+                    //System.out.println("PM beginTask " + title + " " + totalWork);
                 }
             });
             rebase.runInteractively(new RebaseCommand.InteractiveHandler() {
@@ -94,12 +100,14 @@ public class RebaseService {
                     for(int i = 0; i < steps.size(); i++) {
                         RebaseTodoLine step = steps.get(i);
                         if(!mappedCommits.containsKey(step.getCommit())) {
+                            notification.sendMessage(pullRequest.getKey(), "Perform " + step.getCommit().toString() + " Action[remove]");
                             steps.remove(i);
                             i--;
                             continue;
                         }
                         Commit commit = mappedCommits.get(step.getCommit());
                         if(commit.getState() == State.DELETE) {
+                            notification.sendMessage(pullRequest.getKey(), "Perform " + step.getCommit().toString() + " " + " Action[remove]");
                             steps.remove(i);
                             i--;
                             continue;
@@ -109,7 +117,7 @@ public class RebaseService {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        System.out.println(step.getCommit().toString() + " " + step.getAction());
+                        notification.sendMessage(pullRequest.getKey(), "Perform " + step.getCommit().toString() + " " + step.getAction());
                     }
                 }
 
@@ -131,11 +139,18 @@ public class RebaseService {
                     return null;
                 }
             });
+            RebaseResult result = rebase.call();
+            if(!result.getStatus().isSuccessful()) {
+                notification.sendMessage(pullRequest.getKey(), "Failed to rebase, status " + result.getStatus());
+                git.rebase().setOperation(Operation.ABORT).call();
+                notification.sendMessage(pullRequest.getKey(), "Rebase aborted");
+            }
             
-            rebase.call();
         } catch(Exception e) {
+            notification.sendMessage(pullRequest.getKey(), "Failed to rebase due to exception: " + e.getMessage());
             try {
                 git.rebase().setOperation(Operation.ABORT).call();
+                notification.sendMessage(pullRequest.getKey(), "Rebase aborted");
             } catch (Exception e1) {
                 e1.printStackTrace();
             }
@@ -166,11 +181,5 @@ public class RebaseService {
 
     private Git open(LocalStorage storage) throws Exception {
         return Git.open(storage.getLocation());
-        
-//        FileRepositoryBuilder builder = new FileRepositoryBuilder();
-//        Repository repository = builder.setWorkTree(storage.getLocation())
-//                                        .readEnvironment()
-//                                        .build();
-//        return new Git(repository);
     }
 }

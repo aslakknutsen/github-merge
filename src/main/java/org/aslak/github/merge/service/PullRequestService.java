@@ -1,38 +1,42 @@
 package org.aslak.github.merge.service;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.PullRequest;
+import org.aslak.github.merge.model.PullRequestKey;
 import org.aslak.github.merge.rest.GithubUtil;
 import org.kohsuke.github.GitHub;
 
 @ApplicationScoped
 public class PullRequestService {
 
-    private Set<PullRequest> store;
+    private HashMap<PullRequestKey, PullRequest> store;
+
+    @Inject
+    private NotificationService notification;
 
     @Inject
     private CurrentUser currentUser;
     
     public PullRequestService() {
-        this.store = new HashSet<>();
+        this.store = new HashMap<>();
     }
 
-    public PullRequest get(String user, String repo, int pull) {
-        PullRequest request = locate(user, repo, pull);
+    public PullRequest get(PullRequestKey key) {
+        PullRequest request = locate(key);
         if(request == null) {
-            request = fetch(user, repo, pull);
+            notification.sendMessage(key, "Requesting pull request data from GitHub");
+            request = fetch(key);
             store(request);
         }
         return request;
     }
 
-    private PullRequest fetch(String user, String repo, int pull) {
+    private PullRequest fetch(PullRequestKey key) {
         try {
             GitHub github;
             if(currentUser== null) {
@@ -40,34 +44,25 @@ public class PullRequestService {
             } else {
                 github = GitHub.connectUsingOAuth(currentUser.getAccessToken());
             }
-
             return GithubUtil.toPullRequest(
-                        github.getOrganization(user)
-                            .getRepository(repo)
-                            .getPullRequest(pull));
+                        github.getOrganization(key.getUser())
+                            .getRepository(key.getRepository())
+                            .getPullRequest(key.getNumber()));
 
         } catch (Exception e) {
-            throw new RuntimeException("Could not fetch PullRequest from GitHub for " + user + "/" + repo + "/" + pull, e);
+            throw new RuntimeException("Could not fetch PullRequest from GitHub for " + key, e);
         }
     }
 
-    private PullRequest locate(String user, String repo, int pull) {
-        for(PullRequest request : store) {
-            if(
-                    request.getTarget().getUser().equals(user) &&
-                    request.getTarget().getRepository().equals(repo) &&
-                    request.getNumber() == pull) {
-                return request;
-            }
-        }
-        return null;
+    private PullRequest locate(PullRequestKey key) {
+        return store.get(key);
     }
     
     public void store(PullRequest pullrequest) {
-        this.store.add(pullrequest);
+        this.store.put(pullrequest.getKey(), pullrequest);
     }
 
     public void delete(PullRequest pullRequest) {
-        this.store.remove(pullRequest);
+        this.store.remove(pullRequest.getKey());
     }
 }

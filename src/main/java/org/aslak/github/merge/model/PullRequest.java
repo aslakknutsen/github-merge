@@ -23,4 +23,8 @@ public class PullRequest {
     public RepositoryInfo getTarget() {
         return target;
     }
+
+    public PullRequestKey getKey() {
+        return new PullRequestKey(target.getUser(), target.getRepository(), number);
+    }
 }

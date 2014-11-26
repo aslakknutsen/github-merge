@@ -17,6 +17,7 @@ import javax.ws.rs.core.Response.Status;
 import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
+import org.aslak.github.merge.model.PullRequestKey;
 import org.aslak.github.merge.service.PullRequestService;
 import org.aslak.github.merge.service.RebaseService;
 import org.aslak.github.merge.service.RepositoryService;
@@ -36,8 +37,9 @@ public class RebaseResource {
     @GET
     @Path("{user}/{repo}/{pull}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response status(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull) {
-        PullRequest pullRequest = pullRequestService.get(user, repo, pull);
+    public Response status(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number) {
+        PullRequestKey key = new PullRequestKey(user, repository, number);
+        PullRequest pullRequest = pullRequestService.get(key);
         if(pullRequest == null) {
             return Response.status(Status.NOT_FOUND).build();
         }
@@ -62,9 +64,10 @@ public class RebaseResource {
 
     @POST
     @Path("{user}/{repo}/{pull}")
-    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull, JsonArray commitsArray) {
+    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number, JsonArray commitsArray) {
         List<Commit> commits = JSONUtil.commitsFromJson(commitsArray);
-        PullRequest pullRequest = pullRequestService.get(user, repo, pull);
+        PullRequestKey key = new PullRequestKey(user, repository, number);
+        PullRequest pullRequest = pullRequestService.get(key);
         if(pullRequest == null) {
             return Response.status(Status.NOT_FOUND).build();
         }

@@ -17,6 +17,7 @@
     			<i class="fa fa-question-circle"></i>
   			</a>
 		</div>
+		{{notification-area resource=resource}}
 		<div class="row">
 			<ul class="button-group right">
 				<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
@@ -82,6 +83,18 @@
 		
 	</script>
 
+	<script type="text/x-handlebars" data-template-name="components/notification-area">
+		<div class="row logs">
+			<div {{action 'toggleVisibility'}}>
+				<i title="Show/Hide" class="fa fa-plus"></i> Logs <small>({{notifications.length}})</small>
+			</div>
+			<ul {{bind-attr class="hide"}}>
+				{{#each msg in notifications}}
+					<li>{{msg}}</li>
+				{{/each}}
+			</ul>
+		</div>
+	</script>
   </body>
 
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
@@ -225,7 +238,6 @@
 	});
 
 	App.SingleCommitComponent = Ember.Component.extend({
-		classNameBindings: ['isDelete'],
 		isEdit: false,
 		msg: '',
 		actions: {
@@ -273,6 +285,53 @@
 			return this.get("commit._index") == 1;
 		}.property('commit._index')
 
+	});
+
+	App.NotificationAreaComponent = Ember.Component.extend({
+		resource: null, // set in controller
+		socket: null,
+		notifications: [],
+		reconnectCount: 0,
+		hide: true,
+		init: function() {
+			this.open();
+			return this._super();
+		},
+		open: function() {
+			var self = this;
+			var resource = this.get('resource');
+			this.socket = new WebSocket('ws://' + window.location.host + '<%=request.getAttribute("BASE_ROOT")%>/api/' + resource.user + '/' + resource.repository + "/" + resource.pullrequest + '/notification')
+			this.socket.onopen = function() {
+				self.onOpen();
+			}
+			this.socket.onmessage = function(event) {
+				self.onMessage(event.data);
+			}
+			this.socket.onclose = function() {
+				self.onClose();
+			}
+		},
+		onMessage: function(data) {
+			this.get('notifications').pushObject(data);
+		},
+		onClose: function() {
+			if(this.get('reconnectCount') < 10) {
+				this.set('reconnectCount', this.get('reconnectCount')+1);
+				this.open();
+			}
+		},
+		onOpen: function() {
+			this.set('reconnectCount', 0)
+		},
+		actions: {
+			toggleVisibility: function() {
+				if(this.get('hide')) {
+					this.set('hide', false);
+				} else {
+					this.set('hide', true);
+				}
+			}
+		}
 	});
 
 	Ember.Handlebars.helper('get-message-head', function(message) {
