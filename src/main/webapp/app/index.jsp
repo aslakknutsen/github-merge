@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Travling Merger</title>
+    <title>Traveling Merger</title>
     <base href="<%=request.getAttribute("BASE_ROOT")%>" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <!--[if lt IE 9]>
