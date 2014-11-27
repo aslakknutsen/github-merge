@@ -216,6 +216,8 @@
 				postRebase(resource, this.get('model')).then(function() {
 					getStatus(resource).then(function(model) {
 						self.set('model', model);	
+					}, function(error) {
+						console.log(error);
 					});
 				});
 			},
