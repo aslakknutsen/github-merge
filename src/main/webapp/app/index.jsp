@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>Traveling Merger</title>
     <base href="<%=request.getAttribute("BASE_ROOT")%>" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
     <!--[if lt IE 9]>
       <script src='//html5shim.googlecode.com/svn/trunk/html5.js' type='text/javascript'></script>
     <![endif]-->
@@ -118,6 +118,8 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/ember.js/1.9.0-beta.3/ember.min.js"></script>
   <!--<script src="//cdnjs.cloudflare.com/ajax/libs/ember-data.js/1.0.0-beta.11/ember-data.js"></script>-->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/hammer.js/1.1.3/hammer.min.js"></script>
+  <script src="/merger/app/js/ember-hammer.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/foundation/5.4.7/js/foundation.min.js"></script>
   <link href="//cdnjs.cloudflare.com/ajax/libs/foundation/5.4.7/css/foundation.min.css" rel="stylesheet"></style>
   <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet"></style>
@@ -226,11 +228,7 @@
 		hideNotification: false,
 		actions: {
 			toggleNotification: function() {
-				if(this.get('hideNotification')) {
-					this.set('hideNotification', false);
-				} else {
-					this.set('hideNotification', true);
-				}
+				this.toggleProperty('hideNotification');
 			}
 		}
 	})
@@ -290,11 +288,41 @@
 	App.SingleCommitComponent = Ember.Component.extend({
 		isEdit: false,
 		msg: '',
+		hammerOptions: {
+			behavior: {
+				userSelect: false
+			}
+		},
+		gestures: {
+			swipeLeft: function (event) {
+				this.send('remove');
+				return false;
+			},
+			swipeRight: function (event) {
+				this.send('fixup');
+				return false;
+			},
+			doubletap: function (event) {
+				this.send('edit');
+				return false;
+			}
+		},
+		keyDown: function(event) {
+			if(event.keyCode == 27) {
+				this.send('closeEdit');
+			}
+		},
 		actions: {
 			moveup: function() {
+				if(this.get('isFirst')) {
+					return;
+				}
 				this.sendAction('moveup', this.get('commit'))
 			},
 			remove: function() {
+				if(this.get('isFirst')) {
+					return;
+				}
 				if(this.get('commit.state') === 'DELETE') {
 					this.set('commit.state', 'PICK')
 				} else {
@@ -302,6 +330,9 @@
 				}
 			},
 			fixup: function() {
+				if(this.get('isFirst')) {
+					return;
+				}
 				if(this.get('commit.state') === 'FIXUP') {
 					this.set('commit.state', 'PICK')
 				} else {
@@ -311,6 +342,9 @@
 			edit: function() {
 				this.set('msg', this.get('commit.message'));
 				this.set('isEdit', true);
+				Ember.run.later(function() {
+					this.$('textarea').focus();
+				})
 			},
 			closeEdit: function() {
 				this.set('msg', '');
@@ -401,12 +435,19 @@
 		list-style-type: none;
 	}
 
+	.commits .button-group > li {
+		width: 50px;
+		height: 50px;
+	}
+
     .commits > li {
 		margin-bottom: 5px !important;
 		padding-top: 10px;
 		padding-bottom: 10px;
     }
-
+	.desc pre {
+		white-space: pre-wrap;
+	}
     .meta {
 		font-size: 0.8em;
     }
