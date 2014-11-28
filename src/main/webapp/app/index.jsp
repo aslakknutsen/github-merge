@@ -11,13 +11,43 @@
   </head>
   <body>
 
-	<script type="text/x-handlebars" data-template-name="commits">
+	<script type="text/x-handlebars">
 		<div class="icon-bar one-up">
   			<a class="item right">
     			<i class="fa fa-question-circle"></i>
   			</a>
 		</div>
-		{{notification-area resource=resource}}
+		{{outlet}}
+	</script>
+
+	<script type="text/x-handlebars" data-template-name="pullrequest/loading">
+		<div class="row">
+			<div class="small-8 column">
+				Loading..
+			</div>
+		</div>
+	</script>
+
+	<script type="text/x-handlebars" data-template-name="user">
+		{{outlet}}
+	</script>
+	<script type="text/x-handlebars" data-template-name="repository">
+		{{outlet}}
+	</script>
+	<script type="text/x-handlebars" data-template-name="pullrequest">
+		<div class="row logs">
+			<div {{action 'toggleNotification'}}>
+				<i title="Show/Hide" class="fa fa-plus"></i> Logs <small>({{model.length}})</small>
+			</div>
+			<ul {{bind-attr class="hideNotification:hide"}}>
+				{{#each model}}
+					<li>{{this}}</li>
+				{{/each}}
+			</ul>
+		</div>
+		{{outlet}}
+	</script>
+	<script type="text/x-handlebars" data-template-name="pullrequest/index">
 		<div class="row">
 			<ul class="button-group right">
 				<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
@@ -82,19 +112,6 @@
 	  </div>
 		
 	</script>
-
-	<script type="text/x-handlebars" data-template-name="components/notification-area">
-		<div class="row logs">
-			<div {{action 'toggleVisibility'}}>
-				<i title="Show/Hide" class="fa fa-plus"></i> Logs <small>({{notifications.length}})</small>
-			</div>
-			<ul {{bind-attr class="hide"}}>
-				{{#each msg in notifications}}
-					<li>{{msg}}</li>
-				{{/each}}
-			</ul>
-		</div>
-	</script>
   </body>
 
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
@@ -104,55 +121,25 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/foundation/5.4.7/js/foundation.min.js"></script>
   <link href="//cdnjs.cloudflare.com/ajax/libs/foundation/5.4.7/css/foundation.min.css" rel="stylesheet"></style>
   <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet"></style>
-  <style>
-    .icon-bar {
-      background-color: #fff; 
-    }
-    .icon-bar>* i {
-      color: #000;
-    }
-    .is-fixup {
-		background-color: yellow;
-    }
-    .is-delete {
-    	background-color: red;
-    }
-    a {
-      color: #000;
-    }
 
-    .commit {
-    	background-color: #eee;
-    }
-
-	.commits {
-		list-style-type: none;
-	}
-
-    .commits > li {
-    	margin-bottom: 5px !important;
-    	padding-top: 10px;
-    	padding-bottom: 10px;
-
-    }
-
-    .meta {
-    	font-size: 0.8em;
-    }
-    .title {
-    	font-weight: bold;
-    	margin-bottom: 0px;
-    }
-  </style>
   <script>
-	App = Ember.Application.create();
+	App = Ember.Application.create({
+		//LOG_TRANSITIONS: true,
+		//LOG_TRANSITIONS_INTERNAL: true
+	});
 
 	App.Router.reopen({
 		location: 'history'
 	});
 
 	App.Router.map(function() {
-		this.resource('commits', { path: '/:user/:repository/:pullrequest' });
+		this.resource('user', {path: '/:user'}, function() {
+			this.resource('repository', {path: '/:repository'}, function() {
+				this.resource('pullrequest', {path: '/:pullrequest'}, function() {
+
+				})
+			})
+		})
 	});
 	var base = '<%=request.getAttribute("BASE_ROOT")%>/api/rebase/';
 	var getStatus = function(resource) {
@@ -176,18 +163,79 @@
 		});
 	};
 
-	App.CommitsRoute = Ember.Route.extend({
-		model: function(params) {
-			return getStatus(params);
+	App.ApplicationRoute = Ember.Route.extend({
+		model: function() {
+			console.log('ApplicationRoute.model')
+
 		},
 		setupController: function(controller, model) {
-			var params = this.paramsFor(this.routeName);
-			controller.set('model', model);
-			controller.set('resource', params);
+			console.log('ApplicationRoute.setup')
+			//controller.set('resource', this.paramsFor('commits'));
 		}
 	});
-	
-	App.CommitsController = Ember.ArrayController.extend({
+
+	App.UserRoute = Ember.Route.extend({
+		model: function() {
+			console.log('UserRoute.model')
+		}
+	});
+	App.UserController = Ember.ObjectController.extend({
+
+	});
+	App.PullrequestRoute = Ember.Route.extend({
+		model: function(params) {
+			var deferred = Ember.RSVP.defer();
+			var model = [];
+			var resource = collectParams(this);
+			model.socket = new WebSocket('ws://' + window.location.host + '<%=request.getAttribute("BASE_ROOT")%>/api/' + resource.user + '/' + resource.repository + "/" + resource.pullrequest + '/notification')
+			model.socket.onopen = function() {
+				//self.onOpen();
+				deferred.resolve(model);
+			}
+			model.socket.onmessage = function(event) {
+				model.pushObject(event.data);
+			}
+			model.socket.onclose = function() {
+				//self.onClose();
+			}
+			return deferred.promise;
+		}
+	});
+	App.PullrequestIndexRoute = Ember.Route.extend({
+		model: function(params) {
+			console.log('CommitRoute.model ' + collectParams(this))
+			return getStatus(collectParams(this));
+		},
+		setupController: function(controller, model) {
+			var params = collectParams(this);
+			console.log('CommitRoute.params ' + params)
+			controller.set('model', model);
+			controller.set('resource', params);
+		},
+	});
+
+	var collectParams = function(route) {
+			return {
+				user: route.paramsFor('user').user,
+				repository: route.paramsFor('repository').repository,
+				pullrequest: route.paramsFor('pullrequest').pullrequest
+			}
+		}
+
+	App.PullrequestController = Ember.ArrayController.extend({
+		hideNotification: false,
+		actions: {
+			toggleNotification: function() {
+				if(this.get('hideNotification')) {
+					this.set('hideNotification', false);
+				} else {
+					this.set('hideNotification', true);
+				}
+			}
+		}
+	})
+
+	App.PullrequestIndexController = Ember.ArrayController.extend({
 		resource: null, // set in route
     	assignIndex: function() {
     		//Ember.run.once(this, 'updateIndex');
@@ -289,53 +337,6 @@
 
 	});
 
-	App.NotificationAreaComponent = Ember.Component.extend({
-		resource: null, // set in controller
-		socket: null,
-		notifications: [],
-		reconnectCount: 0,
-		hide: true,
-		init: function() {
-			this.open();
-			return this._super();
-		},
-		open: function() {
-			var self = this;
-			var resource = this.get('resource');
-			this.socket = new WebSocket('ws://' + window.location.host + '<%=request.getAttribute("BASE_ROOT")%>/api/' + resource.user + '/' + resource.repository + "/" + resource.pullrequest + '/notification')
-			this.socket.onopen = function() {
-				self.onOpen();
-			}
-			this.socket.onmessage = function(event) {
-				self.onMessage(event.data);
-			}
-			this.socket.onclose = function() {
-				self.onClose();
-			}
-		},
-		onMessage: function(data) {
-			this.get('notifications').pushObject(data);
-		},
-		onClose: function() {
-			if(this.get('reconnectCount') < 10) {
-				this.set('reconnectCount', this.get('reconnectCount')+1);
-				this.open();
-			}
-		},
-		onOpen: function() {
-			this.set('reconnectCount', 0)
-		},
-		actions: {
-			toggleVisibility: function() {
-				if(this.get('hide')) {
-					this.set('hide', false);
-				} else {
-					this.set('hide', true);
-				}
-			}
-		}
-	});
-
 	Ember.Handlebars.helper('get-message-head', function(message) {
 		if(message !== undefined) {
 			return message.split('\n')[0];
@@ -375,4 +376,43 @@
 				author: 'aslak@4fs.no'})
 		]);
   </script>
+  <style>
+    .icon-bar {
+		background-color: #fff;
+    }
+    .icon-bar>* i {
+		color: #000;
+    }
+    .is-fixup {
+		background-color: yellow;
+    }
+    .is-delete {
+		background-color: red;
+    }
+    a {
+		color: #000;
+    }
+
+    .commit {
+		background-color: #eee;
+    }
+
+	.commits {
+		list-style-type: none;
+	}
+
+    .commits > li {
+		margin-bottom: 5px !important;
+		padding-top: 10px;
+		padding-bottom: 10px;
+    }
+
+    .meta {
+		font-size: 0.8em;
+    }
+    .title {
+		font-weight: bold;
+		margin-bottom: 0px;
+    }
+  </style>
 </html>
