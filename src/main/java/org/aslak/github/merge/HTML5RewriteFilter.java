@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 @WebFilter(filterName= "HTML5RewriteFilter", urlPatterns = {"/*"})
 public class HTML5RewriteFilter implements Filter {
 
-    public static final Pattern PATTERN = Pattern.compile("(^.*/api/|\\.(css|js|png|jpg))");
+    public static final Pattern PATTERN = Pattern.compile("(^.*/api/|\\.(css|js|png|jpg|html))");
     public static final String APP_INDEX = "/app/index.jsp";
     
     @Override
