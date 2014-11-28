@@ -50,6 +50,7 @@ public class PullRequestService {
                             .getPullRequest(key.getNumber()));
 
         } catch (Exception e) {
+            notification.sendMessage(key, "Could not fetch pull request data from GitHub: " + e.getMessage());
             throw new RuntimeException("Could not fetch PullRequest from GitHub for " + key, e);
         }
     }
