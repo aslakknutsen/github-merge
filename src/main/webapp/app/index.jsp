@@ -48,27 +48,33 @@
 		{{outlet}}
 	</script>
 	<script type="text/x-handlebars" data-template-name="pullrequest/index">
+		{{#if model}}
 		<div class="row">
 			<ul class="button-group right">
 				<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
 				<li><a title="Fixup all" {{action 'fixupAll'}} class="button tiny">Fixup all</a></li>
 			</ul>
 		</div>
+		{{/if}}
 		<div class="row">
           <ol class="commits">
-          {{#each commit in model}}
-		      <li class="commit row">
-               {{single-commit commit=commit moveup="moveup"}}
-            </li>
+			{{#each commit in model}}
+				<li class="commit row">
+					{{single-commit commit=commit moveup="moveup"}}
+				</li>
+		    {{else}}
+				<li>All commits on branch are upstream. Nothing to do!</li>
 		    {{/each}}
           </ol>
 		</div>
+		{{#if model}}
 		<div class="row">
 			<ul class="button-group right">
-				<li><a title="Push changes upstream" class="button small alert">Push</a></li>
+				<li><a title="Push changes upstream" {{action 'push'}} class="button small alert">Push</a></li>
 				<li><a title="Perform rebase" {{action 'rebase'}} class="button small">Rebase</a></li>
 			</ul>
 		</div>
+		{{/if}}
 	</script>
 
 	<script type="text/x-handlebars" data-template-name="components/single-commit">
