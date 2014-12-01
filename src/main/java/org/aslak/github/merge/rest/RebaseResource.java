@@ -83,7 +83,19 @@ public class RebaseResource {
 
     @POST
     @Path("{user}/{repo}/{pull}/push")
-    public Response push(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull) {
-        return Response.ok().build();
+    public Response push(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number) {
+        PullRequestKey key = new PullRequestKey(user, repository, number);
+        PullRequest pullRequest = pullRequestService.get(key);
+        if(pullRequest == null) {
+            return Response.status(Status.NOT_FOUND).build();
+        }
+
+        LocalStorage storage = repositoryService.get(pullRequest);
+        if(storage == null) {
+            return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+        }
+
+        rebaseService.push(storage, pullRequest);
+        return Response.ok().header("Access-Control-Allow-Origin", "*").build();
     }
 }

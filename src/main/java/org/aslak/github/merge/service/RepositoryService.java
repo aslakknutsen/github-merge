@@ -9,7 +9,6 @@ import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
 
 public class RepositoryService {
@@ -35,30 +34,7 @@ public class RepositoryService {
                     .setBranch(request.getTarget().getBranch())
                     .setDirectory(path)
                     .setURI(request.getTarget().toHttpsURL())
-                    .setProgressMonitor(new ProgressMonitor() {
-
-                        @Override
-                        public void update(int completed) {
-                        }
-
-                        @Override
-                        public void start(int totalTasks) {
-                        }
-
-                        @Override
-                        public boolean isCancelled() {
-                            return false;
-                        }
-
-                        @Override
-                        public void endTask() {
-                        }
-
-                        @Override
-                        public void beginTask(String title, int totalWork) {
-                            notification.sendMessage(request.getKey(), "Begin Task: " + title);
-                        }
-                    });
+                    .setProgressMonitor(new NotificationProgressMonitor(request.getKey(), notification));
         try {
             git = command.call();
         } catch(Exception e) {
@@ -73,6 +49,7 @@ public class RepositoryService {
             
             git.fetch()
                 .setRemote("origin")
+                .setProgressMonitor(new NotificationProgressMonitor(request.getKey(), notification))
                 .call();
             
             git.branchCreate()

@@ -6,28 +6,42 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.Commit.State;
+import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
+import org.aslak.github.merge.model.event.PushedPullRequest;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
+import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.RebaseTodoLine;
 import org.eclipse.jgit.lib.RebaseTodoLine.Action;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 public class RebaseService {
 
     @Inject
     private NotificationService notification;
     
+    @Inject
+    private CurrentUser user;
+
+    @Inject
+    private Event<Object> event;
+
     public List<Commit> status(LocalStorage storage, PullRequest pullRequest) {
         List<Commit> commits = new ArrayList<>();
         Git git = null;
@@ -62,38 +76,10 @@ public class RebaseService {
             git.checkout().setName(String.valueOf(pullRequest.getNumber())).call();
 
             final Map<AbbreviatedObjectId, Commit> mappedCommits = map(commits);
-            
+
             RebaseCommand rebase = git.rebase();
             rebase.setUpstream(pullRequest.getTarget().getBranch());
-            rebase.setProgressMonitor(new ProgressMonitor() {
-                
-                @Override
-                public void update(int completed) {
-                    //System.out.println("PM update " + completed);
-                }
-                
-                @Override
-                public void start(int totalTasks) {
-                    //System.out.println("PM start " + totalTasks);
-                }
-                
-                @Override
-                public boolean isCancelled() {
-                    //System.out.println("PM isCancelled");
-                    return false;
-                }
-                
-                @Override
-                public void endTask() {
-                    //System.out.println("PM endTask");
-                }
-                
-                @Override
-                public void beginTask(String title, int totalWork) {
-                    notification.sendMessage(pullRequest.getKey(), "Begin Task: " + title);
-                    //System.out.println("PM beginTask " + title + " " + totalWork);
-                }
-            });
+            rebase.setProgressMonitor(new NotificationProgressMonitor(pullRequest.getKey(), notification));
             rebase.runInteractively(new RebaseCommand.InteractiveHandler() {
                 @Override
                 public void prepareSteps(List<RebaseTodoLine> steps) {
@@ -142,14 +128,18 @@ public class RebaseService {
             RebaseResult result = rebase.call();
             if(!result.getStatus().isSuccessful()) {
                 notification.sendMessage(pullRequest.getKey(), "Failed to rebase, status " + result.getStatus());
-                git.rebase().setOperation(Operation.ABORT).call();
+                git.rebase().setOperation(Operation.ABORT)
+                    .setProgressMonitor(new NotificationProgressMonitor(pullRequest.getKey(), notification))
+                    .call();
                 notification.sendMessage(pullRequest.getKey(), "Rebase aborted");
             }
-            
+
         } catch(Exception e) {
             notification.sendMessage(pullRequest.getKey(), "Failed to rebase due to exception: " + e.getMessage());
             try {
-                git.rebase().setOperation(Operation.ABORT).call();
+                git.rebase().setOperation(Operation.ABORT)
+                    .setProgressMonitor(new NotificationProgressMonitor(pullRequest.getKey(), notification))
+                    .call();
                 notification.sendMessage(pullRequest.getKey(), "Rebase aborted");
             } catch (Exception e1) {
                 e1.printStackTrace();
@@ -163,10 +153,71 @@ public class RebaseService {
         }
     }
     
+    public void push(LocalStorage storage, PullRequest pullRequest) {
+        Git git = null;
+        try {
+            git = open(storage);
 
-    public void push() {
-        
+            notification.sendMessage(pullRequest.getKey(), "Checking out target branch: " + pullRequest.getTarget().getBranch());
+            git.checkout().setName(String.valueOf(pullRequest.getTarget().getBranch())).call();
+
+            notification.sendMessage(pullRequest.getKey(), "Merging source " + pullRequest.getNumber() + " into target " + pullRequest.getTarget().getBranch());
+            MergeResult result = git.merge()
+                .setFastForward(FastForwardMode.FF_ONLY)
+                .include(git.getRepository().getRef(String.valueOf(pullRequest.getNumber())))
+                .call();
+
+            if(!result.getMergeStatus().isSuccessful()) {
+                notification.sendMessage(pullRequest.getKey(), "Failed to merge, status " + result.getMergeStatus());
+                git.reset().setMode(ResetType.HARD)
+                    .setRef("origin/" + pullRequest.getTarget().getBranch()).call();
+                notification.sendMessage(pullRequest.getKey(), "Reset origin/" + pullRequest.getTarget().getBranch());
+            } else {
+                notification.sendMessage(pullRequest.getKey(), "Merged " + pullRequest + " : " + result.getMergeStatus());
+            }
+
+            notification.sendMessage(pullRequest.getKey(), "Pushing to  " + pullRequest.getTarget().toHttpsURL());
+            Iterable<PushResult> pushResults = git.push()
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(user.getAccessToken(), new char[0]))
+                .setRemote("origin")
+                .setRefSpecs(new RefSpec(pullRequest.getTarget().getBranch() + ":" + pullRequest.getTarget().getBranch()))
+                .setProgressMonitor(new NotificationProgressMonitor(pullRequest.getKey(), notification))
+                .call();
+
+            for(PushResult pushResult : pushResults) {
+                if(pushResult.getMessages() != null && !pushResult.getMessages().isEmpty()) {
+                    notification.sendMessage(pullRequest.getKey(), pushResult.getMessages());
+                }
+            }
+            notification.sendMessage(pullRequest.getKey(), "Push success");
+
+            event.fire(new PushedPullRequest(pullRequest, toCommitList(result.getMergedCommits())));
+        } catch(Exception e) {
+            notification.sendMessage(pullRequest.getKey(), "Failed to merge due to exception: " + e.getMessage());
+            try {
+                git.reset().setMode(ResetType.HARD)
+                    .setRef("origin/" + pullRequest.getTarget().getBranch()).call();
+                notification.sendMessage(pullRequest.getKey(), "Reset origin/" + pullRequest.getTarget().getBranch());
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+            throw new RuntimeException("Failed to merge", e);
+        }
+        finally {
+            if(git != null) {
+                git.close();
+            }
+        }
     }
+
+    private List<String> toCommitList(ObjectId[] mergedCommits) {
+        List<String> ids = new ArrayList<>();
+        for(ObjectId objectId : mergedCommits) {
+            ids.add(objectId.getName());
+        }
+        return ids;
+    }
+
     public void delete() {
         
     }

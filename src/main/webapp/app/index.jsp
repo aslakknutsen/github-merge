@@ -171,6 +171,14 @@
 		});
 	};
 
+	var postPush = function(resource) {
+		var url = base +  resource.user + '/' + resource.repository + '/' + resource.pullrequest + '/push';
+		return $.ajax({
+			url: url,
+			type: 'post'
+		});
+	};
+
 	App.ApplicationRoute = Ember.Route.extend({
 		model: function() {
 			console.log('ApplicationRoute.model')
@@ -267,14 +275,22 @@
 				var resource = this.get('resource')
 				postRebase(resource, this.get('model')).then(function() {
 					getStatus(resource).then(function(model) {
-						self.set('model', model);	
+						self.set('model', model);
 					}, function(error) {
 						console.log(error);
 					});
 				});
 			},
 			push: function() {
-
+				var self = this;
+				var resource = this.get('resource')
+				postPush(resource).then(function() {
+					getStatus(resource).then(function(model) {
+						self.set('model', model);
+					}, function(error) {
+						console.log(error);
+					});
+				});
 			},
 			fixupAll: function() {
 				var commits = this.get('model');
