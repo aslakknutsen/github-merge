@@ -27,4 +27,9 @@ public class PullRequest {
     public PullRequestKey getKey() {
         return new PullRequestKey(target.getUser(), target.getRepository(), number);
     }
+
+    @Override
+    public String toString() {
+        return getKey().toString();
+    }
 }
