@@ -50,73 +50,78 @@
 	<script type="text/x-handlebars" data-template-name="pullrequest/index">
 		{{#if model}}
 		<div class="row">
-			<ul class="button-group right">
-				<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
-				<li><a title="Fixup all" {{action 'fixupAll'}} class="button tiny">Fixup all</a></li>
-			</ul>
+			<div class="small-8 small-centered columns text-center">
+				<ul class="button-group">
+					<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
+					<li><a title="Fixup all" {{action 'fixupAll'}} class="button tiny">Fixup all</a></li>
+				</ul>
+			</div>
 		</div>
 		{{/if}}
 		<div class="row">
-          <ol class="commits">
-			{{#each commit in model}}
-				<li class="commit row">
-					{{single-commit commit=commit moveup="moveup"}}
-				</li>
-		    {{else}}
-				<li>All commits on branch are upstream. Nothing to do!</li>
-		    {{/each}}
-          </ol>
+			<div class="small-12 column">
+				<ol class="commits">
+				{{#each commit in model}}
+					<li class="commit row">
+						{{single-commit commit=commit moveup="moveup"}}
+					</li>
+				{{else}}
+					<li>All commits on branch are upstream. Nothing to do!</li>
+				{{/each}}
+				</ol>
+			</div>
 		</div>
 		{{#if model}}
 		<div class="row">
-			<ul class="button-group right">
-				<li><a title="Push changes upstream" {{action 'push'}} class="button small alert">Push</a></li>
-				<li><a title="Perform rebase" {{action 'rebase'}} class="button small">Rebase</a></li>
-			</ul>
+			<div class="small-8 small-centered columns text-center">
+				<ul class="button-group">
+					<li><a title="Push changes upstream" {{action 'push'}} class="button tiny alert">Push</a></li>
+					<li><a title="Perform rebase" {{action 'rebase'}} class="button tiny">Rebase</a></li>
+				</ul>
+			</div>
 		</div>
 		{{/if}}
 	</script>
 
 	<script type="text/x-handlebars" data-template-name="components/single-commit">
-	  <div class="small-1 column">
-		<div class="avatar">
-            <img src="" />
-         </div>
-      </div>
-	  <div class="commit">
-		  {{#if isEdit}}
-		  <div class="small-8 column">
-			{{textarea value=msg rows=10}}
-		  </div>
-		  <div class="small-3 column actions right text-right">
-			 <ul class="button-group">
-				<li><i title="Save change" {{action 'saveEdit'}} class="button tiny fa fa-save"></i></li>
-				<li><i title="Discard change" {{action 'closeEdit'}} class="button tiny fa fa-close"></i></li>
-			 </ul>
-		  </div>
-		  {{else}}
-		  <div {{bind-attr class=":small-8 :column isDelete isFixup"}}>
-			 <p class="title">{{get-message-head commit.message}}</p>
-			 <div class="meta">
-				{{commit.author}} authored <time>{{commit.date}}</time>
-			 </div>
-			 <div class="desc">
-				<pre>{{get-message-body commit.message}}</pre>
-			 </div>
-		  </div>
-		  <div class="small-3 column actions right text-right">
-			 <ul class="button-group">
+		<div>
+			<div class="small-1 column">
+				<div class="avatar">
+					<img src="" />
+				</div>
+			</div>
+			{{#if isEdit}}
+			<div class="small-8 column">
+				{{textarea value=msg rows=10}}
+			</div>
+			<div class="small-3 column actions right text-right">
+				<ul class="button-group">
+					<li><i title="Save change" {{action 'saveEdit'}} class="button tiny fa fa-save"></i></li>
+					<li><i title="Discard change" {{action 'closeEdit'}} class="button tiny fa fa-close"></i></li>
+				</ul>
+			</div>
+			{{else}}
+			<div {{bind-attr class=":small-8 :column isDelete isFixup"}}>
+				<p class="title">{{get-message-head commit.message}}</p>
+				<div class="meta">
+					{{commit.author}} authored <time>{{commit.date}}</time>
+				</div>
+				<div class="desc">
+					<pre>{{get-message-body commit.message}}</pre>
+				</div>
+			</div>
+			<div class="small-3 column actions text-right">
+				<ul class="button-group">
 				{{#unless isFirst}}
 					<li><i title="Move up" {{action 'moveup'}} class="button tiny fa fa-arrow-up"></i></li>
 					<li><i title="Fixup commit" {{action 'fixup'}} class="button tiny fa fa-caret-square-o-up"></i></li>
+					<li><i title="Remove commit" {{action 'remove'}} class="button alert tiny fa fa-trash-o"></i></li>
 				{{/unless}}
-				<li><i title="Edit message" {{action 'edit'}} class="button tiny fa fa-edit"></i></li>
-				<li><i title="Remove commit" {{action 'remove'}} class="button tiny fa fa-trash-o"></i></li>
-			 </ul>
-		  </div>
-		  {{/if}}
-	  </div>
-		
+					<li><i title="Edit message" {{action 'edit'}} class="button tiny fa fa-edit"></i></li>
+				</ul>
+			</div>
+			{{/if}}
+		</div>
 	</script>
   </body>
 
