@@ -12,11 +12,11 @@
   <body>
 
 	<script type="text/x-handlebars">
-		<div class="icon-bar one-up">
+		<!--div class="icon-bar one-up">
   			<a class="item right">
     			<i class="fa fa-question-circle"></i>
   			</a>
-		</div>
+		</div-->
 		{{outlet}}
 	</script>
 
