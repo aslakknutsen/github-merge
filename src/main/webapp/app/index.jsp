@@ -318,14 +318,17 @@
 		hammerOptions: {
 			behavior: {
 				userSelect: false
-			}
+			},
+			swipeVelocityX: 0.5
 		},
 		gestures: {
 			swipeLeft: function (event) {
+				//console.log('swipeLeft');
 				this.send('remove');
 				return false;
 			},
 			swipeRight: function (event) {
+				//console.log('swipeRight');
 				this.send('fixup');
 				return false;
 			},
@@ -445,26 +448,30 @@
 		color: #000;
     }
     .is-fixup {
-		background-color: yellow;
+		opacity: 0.5;
+		text-decoration: underline;
     }
     .is-delete {
-		background-color: red;
+		opacity: 0.5;
+		text-decoration: line-through;
     }
+    .is-delete .desc, .is-fixup .desc {
+		display:none;
+    }
+
     a {
 		color: #000;
     }
 
+    ol {
+		margin-left: 0px !important;
+    }
     .commit {
 		background-color: #eee;
     }
 
 	.commits {
 		list-style-type: none;
-	}
-
-	.commits .button-group > li {
-		width: 50px;
-		height: 50px;
 	}
 
     .commits > li {
