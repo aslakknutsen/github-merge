@@ -418,28 +418,13 @@
 	});
 
 	App.Commit = Ember.Object.extend({
+		id: null,
+		message: null,
+		state: null,
+		author: null
 	});
-
-	var commits = Em.A([
-			App.Commit.create({
-				id: 'A',
-				message: 'description 1\nlong message\n',
-				state: 'PICK',
-				author: 'aslak@4fs.no'})
-			,
-			App.Commit.create({
-				id: 'B',
-				message: 'description 2\nlong message\n',
-				state: 'PICK',
-				author: 'aslak@4fs.no'})
-				,
-			App.Commit.create({
-				id: 'C',
-				message: 'description 3\nlong message\n',
-				state: 'PICK',
-				author: 'aslak@4fs.no'})
-		]);
   </script>
+
   <style>
     .icon-bar {
 		background-color: #fff;
