@@ -1,13 +1,11 @@
 package org.aslak.github.merge.service;
 
-import javax.ejb.Stateless;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.aslak.github.merge.model.Notification;
 import org.aslak.github.merge.model.PullRequestKey;
 
-@Stateless
 public class NotificationService {
 
     @Inject
