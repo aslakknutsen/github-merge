@@ -13,7 +13,15 @@ import org.eclipse.jgit.lib.Repository;
 
 public class RepositoryService {
 
-    private static final String WORK_FOLDER = "/tmp/mergerer/";
+    private static final String WORK_FOLDER = env("MERGER_TEMP_STORAGE", "/tmp/mergerer/");
+
+    private static String env(String key, String defaultValue) {
+        String value = System.getenv(key);
+        if(value == null) {
+            return defaultValue;
+        }
+        return value;
+    }
 
     @Inject
     private NotificationService notification;
