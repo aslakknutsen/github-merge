@@ -114,10 +114,10 @@
 				<ul class="button-group">
 				{{#unless isFirst}}
 					<li><i title="Move up" {{action 'moveup'}} class="button tiny fa fa-arrow-up"></i></li>
-					<li><i title="Fixup commit" {{action 'fixup'}} class="button tiny fa fa-caret-square-o-up"></i></li>
-					<li><i title="Remove commit" {{action 'remove'}} class="button alert tiny fa fa-trash-o"></i></li>
+					<li><i title="Fixup commit" {{action 'fixup'}} class="hide-for-small-only button tiny fa fa-caret-square-o-up"></i></li>
+					<li><i title="Remove commit" {{action 'remove'}} class="hide-for-small-only button alert tiny fa fa-trash-o"></i></li>
 				{{/unless}}
-					<li><i title="Edit message" {{action 'edit'}} class="button tiny fa fa-edit"></i></li>
+					<li><i title="Edit message" {{action 'edit'}} class="hide-for-small-only button tiny fa fa-edit"></i></li>
 				</ul>
 			</div>
 			{{/if}}
