@@ -1,4 +1,4 @@
-package org.aslak.github.merge;
+package org.aslak.github.merge.servlet;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -17,6 +17,7 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.aslak.github.merge.IOUtil;
 import org.aslak.github.merge.model.CurrentApp;
 import org.aslak.github.merge.model.CurrentUser;
 

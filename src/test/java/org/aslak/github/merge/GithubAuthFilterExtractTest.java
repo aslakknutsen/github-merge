@@ -1,6 +1,7 @@
 package org.aslak.github.merge;
 
 
+import org.aslak.github.merge.servlet.GithubAuthFilter;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package org.aslak.github.merge;
+package org.aslak.github.merge.servlet;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
