@@ -51,13 +51,7 @@ public class RebaseResource {
         if(commits == null) {
             return Response.noContent().build();
         }
-        return Response.ok(JSONUtil.commitsToJson(commits)).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    @OPTIONS
-    @Path("{user}/{repo}/{pull}")
-    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repo, @PathParam("pull") int pull) {
-        return Response.ok().header("Allow", "POST, GET, OPTIONS, HEAD").header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "Content-Type").build();
+        return Response.ok(commits).build();
     }
 
     @POST
@@ -75,7 +69,7 @@ public class RebaseResource {
         }
 
         rebaseService.rebase(storage, pullRequest, commits);
-        return Response.ok().header("Access-Control-Allow-Origin", "*").build();
+        return Response.ok().build();
     }
 
     @POST
@@ -93,6 +87,6 @@ public class RebaseResource {
         }
 
         rebaseService.push(storage, pullRequest);
-        return Response.ok().header("Access-Control-Allow-Origin", "*").build();
+        return Response.ok().build();
     }
 }
