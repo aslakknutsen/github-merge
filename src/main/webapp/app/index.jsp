@@ -155,6 +155,12 @@
 		})
 	});
 	var base = '<%=request.getAttribute("BASE_ROOT")%>/api/rebase/';
+	var removeClientState = function(key, value) {
+		if(key.indexOf("$") == 0) {
+			return undefined;
+		}
+		return value;
+	};
 	var getStatus = function(resource) {
 		//debugger
 		var url = base +  resource.user + '/' + resource.repository + '/' + resource.pullrequest;
@@ -172,7 +178,7 @@
 			url: url,
 			type: 'post',
 			contentType: 'application/json',
-			data: JSON.stringify(model)
+			data: JSON.stringify(model, removeClientState)
 		});
 	};
 
@@ -262,7 +268,7 @@
 			this.map(function(item, index) {
 				if(item !== undefined) {
 					//console.log(index+1 + ":" + item.id + " update")
-					Em.set(item,'_index',index+1)
+					Em.set(item,'$index',index+1)
 				}
 			})
         },
@@ -388,16 +394,16 @@
 			}
 		},
 		updateState: function() {
-			//console.log(this.get('commit._index') + ":" + this.get('commit.id') + ":" + this.get('isFirst'))
+			//console.log(this.get('commit.$index') + ":" + this.get('commit.id') + ":" + this.get('isFirst'))
 			if(this.get('isFirst')) {
 				this.set('commit.state', 'PICK');
 			}
-		}.observes('commit._index'),
-		isDelete: function() {return this.get('commit.state') === 'DELETE'}.property('commit.state', 'commit._index'),
-		isFixup: function() {return this.get('commit.state') === 'FIXUP'}.property('commit.state', 'commit._index'),
+		}.observes('commit.$index'),
+		isDelete: function() {return this.get('commit.state') === 'DELETE'}.property('commit.state', 'commit.$index'),
+		isFixup: function() {return this.get('commit.state') === 'FIXUP'}.property('commit.state', 'commit.$index'),
 		isFirst: function() {
-			return this.get("commit._index") == 1;
-		}.property('commit._index')
+			return this.get("commit.$index") == 1;
+		}.property('commit.$index')
 
 	});
 

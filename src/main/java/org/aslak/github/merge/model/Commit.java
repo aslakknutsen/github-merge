@@ -14,6 +14,8 @@ public class Commit {
     private String author;
     private State state = State.PICK;
     
+    protected Commit() {}
+
     public Commit(String sha, String message, String author) {
         this.id = sha;
         this.message = message;

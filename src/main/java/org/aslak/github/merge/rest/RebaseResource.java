@@ -3,9 +3,7 @@ package org.aslak.github.merge.rest;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.json.JsonArray;
 import javax.ws.rs.GET;
-import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -64,8 +62,7 @@ public class RebaseResource {
 
     @POST
     @Path("{user}/{repo}/{pull}")
-    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number, JsonArray commitsArray) {
-        List<Commit> commits = JSONUtil.commitsFromJson(commitsArray);
+    public Response rebase(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number, List<Commit> commits) {
         PullRequestKey key = new PullRequestKey(user, repository, number);
         PullRequest pullRequest = pullRequestService.get(key);
         if(pullRequest == null) {
