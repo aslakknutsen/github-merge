@@ -5,6 +5,7 @@ import java.io.IOException;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.PullRequest;
 import org.aslak.github.merge.model.event.PushedPullRequest;
@@ -46,8 +47,8 @@ public class GitHubNotificationService {
         StringBuilder sb = new StringBuilder();
 
         sb.append("Pushed upstream\n\n");
-        for(String commit : pull.getCommits()) {
-            sb.append("* ").append(commit).append('\n');
+        for(Commit commit : pull.getCommits()) {
+            sb.append("* ").append(commit.getId()).append('\n');
         }
         return sb.toString();
     }

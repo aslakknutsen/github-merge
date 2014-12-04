@@ -35,7 +35,7 @@ public class RepositoryService {
                     .setBranch(request.getTarget().getBranch())
                     .setDirectory(path)
                     .setURI(request.getTarget().toHttpsURL())
-                    .setProgressMonitor(new NotificationProgressMonitor(request.getKey(), notification));
+                    .setProgressMonitor(new NotificationProgressMonitor(request, notification));
         try {
             git = command.call();
         } catch(Exception e) {
@@ -50,7 +50,7 @@ public class RepositoryService {
             
             git.fetch()
                 .setRemote("origin")
-                .setProgressMonitor(new NotificationProgressMonitor(request.getKey(), notification))
+                .setProgressMonitor(new NotificationProgressMonitor(request, notification))
                 .call();
             
             git.branchCreate()

@@ -16,6 +16,10 @@ public class Commit {
     
     protected Commit() {}
 
+    public Commit(String sha) {
+        this.id = sha;
+    }
+
     public Commit(String sha, String message, String author) {
         this.id = sha;
         this.message = message;
