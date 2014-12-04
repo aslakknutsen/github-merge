@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 
 import javax.inject.Inject;
 
+import org.aslak.github.merge.Config;
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
 import org.eclipse.jgit.api.CloneCommand;
@@ -13,15 +14,7 @@ import org.eclipse.jgit.lib.Repository;
 
 public class RepositoryService {
 
-    private static final String WORK_FOLDER = env("MERGER_TEMP_STORAGE", "/tmp/mergerer/");
-
-    private static String env(String key, String defaultValue) {
-        String value = System.getenv(key);
-        if(value == null) {
-            return defaultValue;
-        }
-        return value;
-    }
+    private static final String WORK_FOLDER = Config.tempStorage();
 
     @Inject
     private NotificationService notification;

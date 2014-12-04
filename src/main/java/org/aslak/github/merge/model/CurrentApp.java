@@ -4,12 +4,10 @@ import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 
+import org.aslak.github.merge.Config;
+
 @Singleton @Startup
 public class CurrentApp {
-
-    private static final String GITHUB_CLIENT_SECRET = "GITHUB_CLIENT_SECRET";
-    private static final String GITHUB_CLIENT_ID = "GITHUB_CLIENT_ID";
-    private static final String MERGER_CALLBACK_URL = "MERGER_CALLBACK_URL";
 
     private String clientId;
     private String clientSecret;
@@ -32,21 +30,8 @@ public class CurrentApp {
 
     @PostConstruct
     private void init() {
-        String clientId = System.getenv(GITHUB_CLIENT_ID);
-        String clientSecret = System.getenv(GITHUB_CLIENT_SECRET);
-        String baseCallbackUrl = System.getenv(MERGER_CALLBACK_URL);
-
-        if(clientId == null || clientId.isEmpty()) {
-            throw new IllegalStateException(GITHUB_CLIENT_ID + " env variable is missing");
-        }
-        if(clientSecret == null || clientSecret.isEmpty()) {
-            throw new IllegalStateException(GITHUB_CLIENT_SECRET + " env variable is missing");
-        }
-        if(baseCallbackUrl == null || baseCallbackUrl.isEmpty()) {
-            throw new IllegalStateException(MERGER_CALLBACK_URL + " env variable is missing");
-        }
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.baseCallbackUrl = baseCallbackUrl;
+        this.clientId = Config.githubClientId();
+        this.clientSecret = Config.githubClientSecret();
+        this.baseCallbackUrl = Config.baseCallBackUrl();
     }
 }
