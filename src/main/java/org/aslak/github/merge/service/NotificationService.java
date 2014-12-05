@@ -82,11 +82,18 @@ public class NotificationService {
         }
 
         public void minor() {
-            current += 1;
-            service.sendProgress(key, current);
+            int steps = (100 / majorSteps);
+            int currMax = steps * (currentMajor+1);
+            if(current < currMax) {
+                current += 1;
+                service.sendProgress(key, current);
+            }
         }
 
         public void end(boolean status) {
+            if(status) {
+                service.sendProgress(key, 100);
+            }
             service.endProgress(key, status);
         }
     }

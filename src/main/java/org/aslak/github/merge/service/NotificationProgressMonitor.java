@@ -11,6 +11,9 @@ public class NotificationProgressMonitor implements ProgressMonitor {
     private NotificationService service;
     private NotifierProgress progress;
 
+    private int updateGroupCount = 1000;
+    private int currentUpdateCount = 0;
+
     public NotificationProgressMonitor(PullRequest key, NotificationService service) {
         this(key, service, null);
     }
@@ -33,7 +36,11 @@ public class NotificationProgressMonitor implements ProgressMonitor {
     @Override
     public void update(int completed) {
         if(progress != null) {
-            progress.minor();
+            currentUpdateCount++;
+            if(currentUpdateCount == updateGroupCount) {
+                currentUpdateCount = 0;
+                progress.minor();
+            }
         }
     }
 
