@@ -171,8 +171,7 @@ public class GitService {
                 .call();
 
             if(!result.getMergeStatus().isSuccessful()) {
-                notifier.message("Failed to merge, status " + result.getMergeStatus());
-                resetTargetHard(git);
+                throw new RuntimeException("Merge not successfull, status " + result.getMergeStatus());
             } else {
                 notifier.message("Merged " + request + " : " + result.getMergeStatus());
             }
