@@ -37,9 +37,15 @@
 	<script type="text/x-handlebars" data-template-name="pullrequest">
 		<div class="row logs">
 			{{#if inProgress}}
-			<p>{{progressCategory}}</p>
-			<div {{bind-attr class=":progress :round progressStatus:success:alert"}}>
-				<span class="meter" {{bind-attr style="meterStyle"}}></span>
+			<div class="row">
+				<div class="small-1 column">
+					{{progressCategory}}
+				</div>
+				<div class="small-11 column">
+					<div {{bind-attr class=":progress :round progressStatus:success:alert"}}>
+						<span class="meter" {{bind-attr style="meterStyle"}}></span>
+					</div>
+				</div>
 			</div>
 			{{/if}}
 			<div {{action 'toggleNotification'}}>
