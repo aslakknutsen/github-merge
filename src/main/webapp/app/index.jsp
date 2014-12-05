@@ -266,6 +266,11 @@
 		meterStyle : function() {
 			return 'width: ' + this.get('currrentProgress') + '%;'
 		}.property('currrentProgress'),
+		showLogOnFailure: function() {
+			if(!this.get('progressStatus')) {
+				this.set('hideNotification', false);
+			}
+		}.observes('progressStatus'),
 		actions: {
 			toggleNotification: function() {
 				this.toggleProperty('hideNotification');
