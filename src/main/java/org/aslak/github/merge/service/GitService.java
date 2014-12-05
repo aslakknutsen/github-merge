@@ -9,7 +9,8 @@ import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
-import org.aslak.github.merge.model.PullRequestKey;
+import org.aslak.github.merge.service.NotificationService.Notifier;
+import org.aslak.github.merge.service.NotificationService.NotifierProgress;
 import org.aslak.github.merge.service.model.Result;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
@@ -36,33 +37,21 @@ public class GitService {
         return new Operations(storage, request, notificationService);
     }
     
-    public static class Notifier {
-
-        private NotificationService service;
-        private PullRequestKey key;
-
-        Notifier(PullRequestKey key, NotificationService service) {
-            this.key = key;
-            this.service = service;
-        }
-
-        public void message(String message) {
-            service.sendMessage(key, message);
-        }
-    }
 
     public static class Operations {
         
         private LocalStorage storage;
         private PullRequest request;
         private Notifier notifier;
+        private NotifierProgress progress;
         private NotificationService notification;
         
         public Operations(LocalStorage storage, PullRequest request, NotificationService notification) {
             this.storage = storage;
             this.request = request;
-            this.notifier = new Notifier(request.getKey(), notification);
             this.notification = notification;
+            this.notifier = notification.getNotifier(request.getKey());
+            this.progress = notification.getNotifierProgress(request.getKey());
         }
 
         public Result<List<Commit>> doStatus() {
@@ -70,10 +59,9 @@ public class GitService {
             try {
                 git = open();
                 return new Result<>(status(git));
-
             } catch(Exception e) {
-                notifier.message("Failed to status due to exception: " + e.getMessage());
-                return new Result<>(new RuntimeException("Could not open Git repository", e));                
+                notifier.message("Failed to get status due to exception: " + e.getMessage());
+                return new Result<>(new RuntimeException("Could not get status for " + request, e));                
             } finally {
                 close(git);
             }
@@ -81,14 +69,19 @@ public class GitService {
         
         public Result<Boolean> doRebase(List<Commit> commits) {
             Git git = null;
+            progress.start("Rebase", 3);
             try {
                 git = open();
+                progress.major();
                 checkoutPullRequestBranch(git);
+                progress.major();
                 rebaseOnTargetBranch(git, commits);
-
+                progress.major();
+                progress.end(true);
                 return new Result<>(true);
             }
             catch(Exception e) {
+                progress.end(false);
                 notifier.message("Failed to rebase due to exception: " + e.getMessage());
                 try {
                     abortRebase(git);
@@ -96,7 +89,7 @@ public class GitService {
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
-                return new Result<>(new RuntimeException("Failed to rebase", e));
+                return new Result<>(new RuntimeException("Failed to rebase " + request, e));
             }
             finally {
                 close(git);
@@ -119,7 +112,7 @@ public class GitService {
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
-                return new Result<>(new RuntimeException("Failed to merge", e));
+                return new Result<>(new RuntimeException("Failed to merge " + request, e));
             }
             finally {
                 close(git);
@@ -156,13 +149,11 @@ public class GitService {
         private void rebaseOnTargetBranch(Git git, final List<Commit> commits) throws Exception {
             RebaseCommand rebase = git.rebase();
             rebase.setUpstream(request.getTarget().getBranch());
-            rebase.setProgressMonitor(new NotificationProgressMonitor(request, notification));
+            rebase.setProgressMonitor(new NotificationProgressMonitor(request, notification, progress));
             rebase.runInteractively(new GitUtil.InteractiveRebase(notification, request.getKey(), commits));
             RebaseResult result = rebase.call();
             if(!result.getStatus().isSuccessful()) {
-                notifier.message("Failed to rebase, status " + result.getStatus());
-                abortRebase(git);
-                notifier.message("Rebase aborted");
+                throw new RuntimeException("Rebase not successful, status " + result.getStatus());
             }
         }
         

@@ -47,9 +47,18 @@ public class NotificationCentral {
         }
         for(Session session : registered) {
             if(session.isOpen()) {
-                session.getAsyncRemote().sendText(notification.getMessage());
+                session.getAsyncRemote().sendText(notificationToJson(notification));
             }
         }
     }
 
+    private String notificationToJson(Notification n) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n")
+            .append("\"type\": \"").append(n.getType()).append("\",\n")
+            .append("\"key\": \"").append(n.getKey()).append("\",\n")
+            .append("\"message\": \"").append(n.getMessage()).append("\"\n")
+        .append("}\n");
+        return sb.toString();
+    }
 }

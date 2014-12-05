@@ -36,6 +36,12 @@
 	</script>
 	<script type="text/x-handlebars" data-template-name="pullrequest">
 		<div class="row logs">
+			{{#if inProgress}}
+			<p>{{progressCategory}}</p>
+			<div {{bind-attr class=":progress :round progressStatus:success:alert"}}>
+				<span class="meter" {{bind-attr style="meterStyle"}}></span>
+			</div>
+			{{/if}}
 			<div {{action 'toggleNotification'}}>
 				<i title="Show/Hide" class="fa fa-plus"></i> Logs <small>({{model.length}})</small>
 			</div>
@@ -211,6 +217,7 @@
 	});
 	App.PullrequestRoute = Ember.Route.extend({
 		model: function(params) {
+			var self = this;
 			var deferred = Ember.RSVP.defer();
 			var model = [];
 			var resource = collectParams(this);
@@ -220,7 +227,8 @@
 				deferred.resolve(model);
 			}
 			model.socket.onmessage = function(event) {
-				model.pushObject(event.data);
+				var json = JSON.parse(event.data);
+				self.get('controller').send('message', json);
 			}
 			model.socket.onclose = function() {
 				//self.onClose();
@@ -250,10 +258,30 @@
 		}
 
 	App.PullrequestController = Ember.ArrayController.extend({
-		hideNotification: false,
+		progressCategory: '',
+		inProgress: false,
+		progressStatus: true,
+		currrentProgress: 0,
+		hideNotification: true,
+		meterStyle : function() {
+			return 'width: ' + this.get('currrentProgress') + '%;'
+		}.property('currrentProgress'),
 		actions: {
 			toggleNotification: function() {
 				this.toggleProperty('hideNotification');
+			},
+			message: function(message) {
+				if(message.type === 'MESSAGE') {
+					this.get('model').pushObject(message.message);
+				} else if(message.type === 'PROGRESS_START') {
+					this.set('inProgress', true);
+					this.set('currrentProgress', 0)
+					this.set('progressCategory', message.message);
+				} else if(message.type === 'PROGRESS') {
+					this.set('currrentProgress', parseInt(message.message));
+				} else if(message.type === 'PROGRESS_END') {
+					this.set('progressStatus', message.message === 'true' ? true:false);
+				}
 			}
 		}
 	})

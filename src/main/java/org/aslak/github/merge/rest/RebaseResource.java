@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -62,6 +63,8 @@ public class RebaseResource {
 
     @POST
     @Path("{user}/{repo}/{pull}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response rebase(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number, List<Commit> commits) {
         PullRequestKey key = new PullRequestKey(user, repository, number);
         PullRequest request = pullRequestService.get(key);
@@ -79,6 +82,7 @@ public class RebaseResource {
 
     @POST
     @Path("{user}/{repo}/{pull}/push")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response push(@PathParam("user") String user, @PathParam("repo") String repository, @PathParam("pull") int number) {
         PullRequestKey key = new PullRequestKey(user, repository, number);
         PullRequest request = pullRequestService.get(key);
@@ -104,9 +108,37 @@ public class RebaseResource {
             if(value instanceof Boolean) {
                 return Response.ok().build();
             }
-            return Response.ok(value).build();
+            return Response
+                    .ok(value)
+                    .build();
         } else {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result.getException()).build();
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ExceptionResponse.from(result.getException()))
+                    .build();
+        }
+    }
+
+    public static class ExceptionResponse {
+        private String message;
+
+        public ExceptionResponse(String message) {
+            this.message = message;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public static ExceptionResponse from(Exception e) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(e.getMessage()).append('\n');
+
+            Throwable cause = e;
+            while( (cause = cause.getCause()) != null) {
+                sb.append("caused by: ").append(cause.getMessage()).append('\n');
+            }
+            return new ExceptionResponse(sb.toString());
         }
     }
 }
