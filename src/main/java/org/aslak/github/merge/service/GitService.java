@@ -167,7 +167,7 @@ public class GitService {
             }
             catch(Exception e) {
                 progress.end(false);
-                notifier.message("Failed to merge due to exception: " + e.getMessage());
+                notifier.message("Failed to push due to exception: " + e.getMessage());
                 try {
                     resetTargetHard(git);
                 } catch (Exception e1) {
