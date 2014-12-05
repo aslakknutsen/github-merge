@@ -9,6 +9,7 @@ import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.LocalStorage;
 import org.aslak.github.merge.model.PullRequest;
+import org.aslak.github.merge.model.PullRequestKey;
 import org.aslak.github.merge.service.model.Result;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
@@ -35,15 +36,32 @@ public class GitService {
         return new Operations(storage, request, notificationService);
     }
     
+    public static class Notifier {
+
+        private NotificationService service;
+        private PullRequestKey key;
+
+        Notifier(PullRequestKey key, NotificationService service) {
+            this.key = key;
+            this.service = service;
+        }
+
+        public void message(String message) {
+            service.sendMessage(key, message);
+        }
+    }
+
     public static class Operations {
         
         private LocalStorage storage;
         private PullRequest request;
+        private Notifier notifier;
         private NotificationService notification;
         
         public Operations(LocalStorage storage, PullRequest request, NotificationService notification) {
             this.storage = storage;
             this.request = request;
+            this.notifier = new Notifier(request.getKey(), notification);
             this.notification = notification;
         }
 
@@ -54,7 +72,7 @@ public class GitService {
                 return new Result<>(status(git));
 
             } catch(Exception e) {
-                notification.sendMessage(request, "Failed to status due to exception: " + e.getMessage());
+                notifier.message("Failed to status due to exception: " + e.getMessage());
                 return new Result<>(new RuntimeException("Could not open Git repository", e));                
             } finally {
                 close(git);
@@ -71,10 +89,10 @@ public class GitService {
                 return new Result<>(true);
             }
             catch(Exception e) {
-                notification.sendMessage(request, "Failed to rebase due to exception: " + e.getMessage());
+                notifier.message("Failed to rebase due to exception: " + e.getMessage());
                 try {
                     abortRebase(git);
-                    notification.sendMessage(request, "Rebase aborted");
+                    notifier.message("Rebase aborted");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -95,7 +113,7 @@ public class GitService {
                 return new Result<>(commits);
             }
             catch(Exception e) {
-                notification.sendMessage(request, "Failed to merge due to exception: " + e.getMessage());
+                notifier.message("Failed to merge due to exception: " + e.getMessage());
                 try {
                     resetTargetHard(git);
                 } catch (Exception e1) {
@@ -120,12 +138,12 @@ public class GitService {
         }
 
         private void checkoutTargetBranch(Git git) throws Exception {
-            notification.sendMessage(request, "Checking out pull request branch: " + request.getTarget().getBranch());
+            notifier.message("Checking out pull request branch: " + request.getTarget().getBranch());
             git.checkout().setName(String.valueOf(request.getTarget().getBranch())).call();
         }
 
         private void checkoutPullRequestBranch(Git git) throws Exception {
-            notification.sendMessage(request, "Checking out pull request branch: " + request.getTarget().getBranch());
+            notifier.message("Checking out pull request branch: " + request.getTarget().getBranch());
             git.checkout().setName(String.valueOf(request.getNumber())).call();
         }
         
@@ -142,9 +160,9 @@ public class GitService {
             rebase.runInteractively(new GitUtil.InteractiveRebase(notification, request.getKey(), commits));
             RebaseResult result = rebase.call();
             if(!result.getStatus().isSuccessful()) {
-                notification.sendMessage(request, "Failed to rebase, status " + result.getStatus());
+                notifier.message("Failed to rebase, status " + result.getStatus());
                 abortRebase(git);
-                notification.sendMessage(request, "Rebase aborted");
+                notifier.message("Rebase aborted");
             }
         }
         
@@ -155,23 +173,23 @@ public class GitService {
         }
         
         private List<Commit> mergePullRequestBranchWithTarget(Git git) throws Exception {
-            notification.sendMessage(request, "Merging source " + request.getNumber() + " into target " + request.getTarget().getBranch());
+            notifier.message("Merging source " + request.getNumber() + " into target " + request.getTarget().getBranch());
             MergeResult result = git.merge()
                 .setFastForward(FastForwardMode.FF_ONLY)
                 .include(git.getRepository().getRef(String.valueOf(request.getNumber())))
                 .call();
 
             if(!result.getMergeStatus().isSuccessful()) {
-                notification.sendMessage(request, "Failed to merge, status " + result.getMergeStatus());
+                notifier.message("Failed to merge, status " + result.getMergeStatus());
                 resetTargetHard(git);
             } else {
-                notification.sendMessage(request, "Merged " + request + " : " + result.getMergeStatus());
+                notifier.message("Merged " + request + " : " + result.getMergeStatus());
             }
             return GitUtil.toCommitList(result.getMergedCommits());
         }
         
         private void pushTargetBranch(Git git, CurrentUser user) throws Exception {
-            notification.sendMessage(request.getKey(), "Pushing to  " + request.getTarget().toHttpsURL());
+            notifier.message("Pushing to  " + request.getTarget().toHttpsURL());
             Iterable<PushResult> pushResults = git.push()
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider(user.getAccessToken(), new char[0]))
                     .setRemote("origin")
@@ -181,16 +199,16 @@ public class GitService {
 
             for(PushResult pushResult : pushResults) {
                 if(pushResult.getMessages() != null && !pushResult.getMessages().isEmpty()) {
-                    notification.sendMessage(request, pushResult.getMessages());
+                    notifier.message(pushResult.getMessages());
                 }
             }
-            notification.sendMessage(request, "Push success");
+            notifier.message("Push success");
         }
         
         private void resetTargetHard(Git git) throws Exception {
             git.reset().setMode(ResetType.HARD)
                 .setRef("origin/" + request.getTarget().getBranch()).call();
-            notification.sendMessage(request, "Reset origin/" + request.getTarget().getBranch());
+            notifier.message("Reset origin/" + request.getTarget().getBranch());
         }
        
     } 
