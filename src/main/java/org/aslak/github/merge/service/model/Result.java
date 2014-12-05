@@ -13,10 +13,14 @@ public class Result<T> {
         this.result = result;
     }
     
-    public boolean wasSuccess() {
+    public boolean successful() {
         return e == null;
     }
     
+    public boolean failed() {
+        return !successful();
+    }
+
     public Exception getException() {
         return e;
     }

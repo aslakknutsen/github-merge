@@ -22,7 +22,6 @@ import org.aslak.github.merge.model.PullRequestKey;
 import org.aslak.github.merge.model.event.PushedPullRequest;
 import org.aslak.github.merge.service.GitService;
 import org.aslak.github.merge.service.PullRequestService;
-import org.aslak.github.merge.service.RepositoryService;
 import org.aslak.github.merge.service.model.Result;
 
 @Path("rebase")
@@ -33,9 +32,6 @@ public class RebaseResource {
 
     @Inject
     private PullRequestService pullRequestService;
-
-    @Inject
-    private RepositoryService repositoryService;
 
     @Inject
     private CurrentUser currentUser;
@@ -53,12 +49,12 @@ public class RebaseResource {
             return Response.status(Status.NOT_FOUND).build();
         }
 
-        LocalStorage storage = repositoryService.get(request);
-        if(storage == null) {
+        Result<LocalStorage> storage = gitService.perform(request).doClone();
+        if(storage.failed()) {
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
 
-        return buildResultResponse(gitService.perform(storage, request).doStatus());
+        return buildResultResponse(gitService.perform(storage.getResult(), request).doStatus());
     }
 
     @POST
@@ -72,12 +68,12 @@ public class RebaseResource {
             return Response.status(Status.NOT_FOUND).build();
         }
 
-        LocalStorage storage = repositoryService.get(request);
-        if(storage == null) {
+        Result<LocalStorage> storage = gitService.perform(request).doClone();
+        if(storage.failed()) {
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
 
-        return buildResultResponse(gitService.perform(storage, request).doRebase(commits));
+        return buildResultResponse(gitService.perform(storage.getResult(), request).doRebase(commits));
     }
 
     @POST
@@ -90,20 +86,20 @@ public class RebaseResource {
             return Response.status(Status.NOT_FOUND).build();
         }
 
-        LocalStorage storage = repositoryService.get(request);
-        if(storage == null) {
+        Result<LocalStorage> storage = gitService.perform(request).doClone();
+        if(storage.failed()) {
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
 
-        Result<List<Commit>> commits = gitService.perform(storage, request).doPush(currentUser);
-        if(commits.wasSuccess()) {
+        Result<List<Commit>> commits = gitService.perform(storage.getResult(), request).doPush(currentUser);
+        if(commits.successful()) {
             events.fire(new PushedPullRequest(request, commits.getResult()));
         }
         return buildResultResponse(commits);
     }
 
     private Response buildResultResponse(Result<?> result) {
-        if(result.wasSuccess()) {
+        if(result.successful()) {
             Object value = result.getResult();
             if(value instanceof Boolean) {
                 return Response.ok().build();

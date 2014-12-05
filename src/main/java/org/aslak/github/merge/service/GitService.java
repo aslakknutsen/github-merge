@@ -1,10 +1,13 @@
 package org.aslak.github.merge.service;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.inject.Inject;
 
+import org.aslak.github.merge.Config;
 import org.aslak.github.merge.model.Commit;
 import org.aslak.github.merge.model.CurrentUser;
 import org.aslak.github.merge.model.LocalStorage;
@@ -14,17 +17,21 @@ import org.aslak.github.merge.service.NotificationService.NotifierProgress;
 import org.aslak.github.merge.service.model.Result;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
+import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 public class GitService {
+
+    private static final String WORK_FOLDER = Config.tempStorage();
 
     private NotificationService notificationService;
 
@@ -33,12 +40,29 @@ public class GitService {
         this.notificationService = notificationService;
     }
     
-    public Operations perform(LocalStorage storage, PullRequest request) {
+    public OfflineOperations perform(PullRequest request) {
+        return new Operations(null, request, notificationService);
+    }
+
+    public OnlineOperations perform(LocalStorage storage, PullRequest request) {
         return new Operations(storage, request, notificationService);
     }
     
+    public interface OnlineOperations {
 
-    public static class Operations {
+        Result<Boolean> doRebase(List<Commit> commits);
+        Result<List<Commit>> doStatus();
+        Result<List<Commit>> doPush(CurrentUser user);
+
+    }
+
+    public interface OfflineOperations {
+
+        Result<LocalStorage> doClone();
+
+    }
+
+    public static class Operations implements OnlineOperations, OfflineOperations {
         
         private LocalStorage storage;
         private PullRequest request;
@@ -54,6 +78,34 @@ public class GitService {
             this.progress = notification.getNotifierProgress(request.getKey());
         }
 
+        @Override
+        public Result<LocalStorage> doClone() {
+            LocalStorage storage = null;
+            Git git = null;
+            try {
+                storage = repositoryExists();
+                if(storage == null) {
+                    progress.start("Clone", 3);
+                    git = cloneTargetRepository();
+                    progress.major();
+                    fetchPullRequestBranch(git);
+                    progress.major();
+                    createPullRequestbranch(git);
+                    progress.major();
+                    storage = new LocalStorage(git.getRepository().getWorkTree());
+                    progress.end(true);
+                }
+            } catch(Exception e) {
+                progress.end(false);
+                notifier.message("Failed to clone due to exception: " + e.getMessage());
+                return new Result<>(e);
+            } finally {
+                close(git);
+            }
+            return new Result<>(storage);
+        }
+
+        @Override
         public Result<List<Commit>> doStatus() {
             Git git = null;
             try {
@@ -67,6 +119,7 @@ public class GitService {
             }
         }
         
+        @Override
         public Result<Boolean> doRebase(List<Commit> commits) {
             Git git = null;
             progress.start("Rebase", 3);
@@ -93,9 +146,10 @@ public class GitService {
             }
             finally {
                 close(git);
-            }   
-        }        
+            }
+        }
 
+        @Override
         public Result<List<Commit>> doPush(CurrentUser user) {
             Git git = null;
             progress.start("Push", 4);
@@ -127,6 +181,57 @@ public class GitService {
         }
 
         
+        private void createPullRequestbranch(Git git) throws Exception {
+            git.branchCreate()
+                .setName(String.valueOf(request.getNumber()))
+                .setStartPoint("origin/pr/" + request.getNumber())
+                .call();
+        }
+
+        private void fetchPullRequestBranch(Git git) throws Exception {
+            notification.sendMessage(request.getKey(), "Fetching pull request branch from GitHub");
+            Repository repository = git.getRepository();
+            repository.getConfig().setString("remote", "origin", "fetch", "+refs/pull/" + request.getNumber() + "/head:refs/remotes/origin/pr/" + request.getNumber());
+            repository.getConfig().save();
+
+            git.fetch()
+                .setRemote("origin")
+                .setProgressMonitor(new NotificationProgressMonitor(request, notification, progress))
+                .call();
+        }
+
+        private Git cloneTargetRepository() {
+            File path = calculateRepositoryStoragePath(request);
+            if(!path.mkdirs()) {
+                throw new RuntimeException("Could not create path " + path);
+            }
+
+            notifier.message("Cloning repository from GitHub " + request.getTarget().toHttpsURL());
+            CloneCommand command = Git.cloneRepository()
+                        .setBranch(request.getTarget().getBranch())
+                        .setDirectory(path)
+                        .setURI(request.getTarget().toHttpsURL())
+                        .setProgressMonitor(new NotificationProgressMonitor(request, notification, progress));
+            try {
+                return command.call();
+            } catch(Exception e) {
+                notifier.message("Failed to clone repository " + e.getMessage());
+                throw new RuntimeException("Could not clone source repository " + request.getTarget().toHttpsURL(), e);
+            }
+        }
+
+        private LocalStorage repositoryExists() {
+            File path = calculateRepositoryStoragePath(request);
+            if(path.exists() && new File(path, ".git").exists()) {
+                return new LocalStorage(path);
+            }
+            return null;
+        }
+
+        private File calculateRepositoryStoragePath(PullRequest request) {
+            return Paths.get(WORK_FOLDER, request.getTarget().getUser(), request.getTarget().getRepository(), String.valueOf(request.getNumber())).toFile();
+        }
+
         private Git open() throws IOException {
             return Git.open(storage.getLocation());
         }

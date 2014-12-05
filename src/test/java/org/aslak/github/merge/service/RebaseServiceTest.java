@@ -24,14 +24,13 @@ public class RebaseServiceTest {
     @Test @Ignore
     public void shouldBeAbleToList() throws Exception {
         PullRequest request = TestUtils.getPullRequest();
-        RepositoryService repo = new RepositoryService();
         GitService git = new GitService(notificationService);
 
-        LocalStorage storage = repo.get(request);
+        LocalStorage storage = git.perform(request).doClone().getResult();
         
         Result<List<Commit>> result = git.perform(storage, request).doStatus();
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.wasSuccess());
+        Assert.assertTrue(result.successful());
 
         List<Commit> commits = result.getResult();
         Assert.assertNotNull(commits);
