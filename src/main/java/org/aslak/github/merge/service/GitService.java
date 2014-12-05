@@ -98,14 +98,21 @@ public class GitService {
 
         public Result<List<Commit>> doPush(CurrentUser user) {
             Git git = null;
+            progress.start("Push", 4);
             try {
                 git = open();
+                progress.major();
                 checkoutTargetBranch(git);
+                progress.major();
                 List<Commit> commits = mergePullRequestBranchWithTarget(git);
+                progress.major();
                 pushTargetBranch(git, user);
+                progress.major();
+                progress.end(true);
                 return new Result<>(commits);
             }
             catch(Exception e) {
+                progress.end(false);
                 notifier.message("Failed to merge due to exception: " + e.getMessage());
                 try {
                     resetTargetHard(git);
