@@ -45,7 +45,7 @@ public class PullRequestService {
                 github = GitHub.connectUsingOAuth(currentUser.getAccessToken());
             }
             return GithubUtil.toPullRequest(
-                        github.getOrganization(key.getUser())
+                        github.getUser(key.getUser())
                             .getRepository(key.getRepository())
                             .getPullRequest(key.getNumber()));
 
