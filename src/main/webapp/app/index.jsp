@@ -60,38 +60,48 @@
 		{{outlet}}
 	</script>
 	<script type="text/x-handlebars" data-template-name="pullrequest/index">
-		{{#if model}}
+		{{#if error}}
 		<div class="row">
-			<div class="small-8 small-centered columns text-center">
-				<ul class="button-group">
-					<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
-					<li><a title="Fixup all" {{action 'fixupAll'}} class="button tiny">Fixup all</a></li>
-				</ul>
+			<div class="small-12 column alert-box alert">
+				{{error.message}}
 			</div>
+			<p>Manual rebase required</p>
 		</div>
-		{{/if}}
-		<div class="row">
-			<div class="small-12 column">
-				<ol class="commits">
-				{{#each commit in model}}
-					<li class="commit row">
-						{{single-commit commit=commit moveup="moveup"}}
-					</li>
-				{{else}}
-					<li>All commits on branch are upstream. Nothing to do!</li>
-				{{/each}}
-				</ol>
+		{{else}}
+			{{#if model}}
+			<div class="row">
+				<div class="small-8 small-centered columns text-center">
+					<ul class="button-group">
+						<li><a title="Pick all" {{action 'pickAll'}} class="button tiny">Pick all</a></li>
+						<li><a title="Fixup all" {{action 'fixupAll'}} class="button tiny">Fixup all</a></li>
+					</ul>
+				</div>
 			</div>
-		</div>
-		{{#if model}}
-		<div class="row">
-			<div class="small-8 small-centered columns text-center">
-				<ul class="button-group">
-					<li><a title="Push changes upstream" {{action 'push'}} class="button tiny alert">Push</a></li>
-					<li><a title="Perform rebase" {{action 'rebase'}} class="button tiny">Rebase</a></li>
-				</ul>
+			{{/if}}
+			<div class="row">
+				<div class="small-12 column">
+					<ol class="commits">
+					{{#each commit in model}}
+						<li class="commit row">
+							{{single-commit commit=commit moveup="moveup"}}
+						</li>
+					{{else}}
+						<li>All commits on branch are upstream. Nothing to do!</li>
+					{{/each}}
+					</ol>
+				</div>
 			</div>
-		</div>
+			{{#if model}}
+			<div class="row">
+				<div class="small-8 small-centered columns text-center">
+					<ul class="button-group">
+						<li><a title="Push changes upstream" {{action 'push'}} class="button tiny alert">Push</a></li>
+						<li><a title="Perform rebase" {{action 'rebase'}} class="button tiny">Rebase</a></li>
+					</ul>
+				</div>
+			</div>
+			{{/if}}
+
 		{{/if}}
 	</script>
 
@@ -189,6 +199,8 @@
 		return $.ajax({
 			url: url,
 			type: 'post',
+			timeout: 5000,
+			dataType: 'json',
 			contentType: 'application/json',
 			data: JSON.stringify(model, removeClientState)
 		});
@@ -204,18 +216,15 @@
 
 	App.ApplicationRoute = Ember.Route.extend({
 		model: function() {
-			console.log('ApplicationRoute.model')
 
 		},
 		setupController: function(controller, model) {
-			console.log('ApplicationRoute.setup')
 			//controller.set('resource', this.paramsFor('commits'));
 		}
 	});
 
 	App.UserRoute = Ember.Route.extend({
 		model: function() {
-			console.log('UserRoute.model')
 		}
 	});
 	App.UserController = Ember.ObjectController.extend({
@@ -244,12 +253,10 @@
 	});
 	App.PullrequestIndexRoute = Ember.Route.extend({
 		model: function(params) {
-			console.log('CommitRoute.model ' + collectParams(this))
 			return getStatus(collectParams(this));
 		},
 		setupController: function(controller, model) {
 			var params = collectParams(this);
-			console.log('CommitRoute.params ' + params)
 			controller.set('model', model);
 			controller.set('resource', params);
 		},
@@ -322,23 +329,25 @@
 			},
 			rebase: function() {
 				var self = this;
+				self.set('error', null);
 				var resource = this.get('resource')
 				postRebase(resource, this.get('model')).then(function() {
 					getStatus(resource).then(function(model) {
 						self.set('model', model);
-					}, function(error) {
-						console.log(error);
 					});
+				}, function(response, type, error) {
+					self.set('error', JSON.parse(response.responseText))
 				});
 			},
 			push: function() {
 				var self = this;
+				self.set('error', null);
 				var resource = this.get('resource')
 				postPush(resource).then(function() {
-					getStatus(resource).then(function(model) {
+					getStatus(resource).done(function(model) {
 						self.set('model', model);
-					}, function(error) {
-						console.log(error);
+					}, function(response, type, error) {
+						self.set('error', JSON.parse(response.responseText))
 					});
 				});
 			},
