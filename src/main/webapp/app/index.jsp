@@ -346,9 +346,9 @@
 				postPush(resource).then(function() {
 					getStatus(resource).done(function(model) {
 						self.set('model', model);
-					}, function(response, type, error) {
-						self.set('error', JSON.parse(response.responseText))
 					});
+				}, function(response, type, error) {
+						self.set('error', JSON.parse(response.responseText))
 				});
 			},
 			fixupAll: function() {
