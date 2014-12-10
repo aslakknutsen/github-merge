@@ -199,8 +199,6 @@
 		return $.ajax({
 			url: url,
 			type: 'post',
-			timeout: 5000,
-			dataType: 'json',
 			contentType: 'application/json',
 			data: JSON.stringify(model, removeClientState)
 		});
