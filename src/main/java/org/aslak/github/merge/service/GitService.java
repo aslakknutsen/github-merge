@@ -122,9 +122,13 @@ public class GitService {
         @Override
         public Result<Boolean> doRebase(List<Commit> commits) {
             Git git = null;
-            progress.start("Rebase", 3);
+            progress.start("Rebase", 5);
             try {
                 git = open();
+                progress.major();
+                fetchTarget(git);
+                progress.major();
+                resetTargetHard(git);
                 progress.major();
                 checkoutPullRequestBranch(git);
                 progress.major();
@@ -152,11 +156,15 @@ public class GitService {
         @Override
         public Result<List<Commit>> doPush(CurrentUser user) {
             Git git = null;
-            progress.start("Push", 4);
+            progress.start("Push", 6);
             try {
                 git = open();
                 progress.major();
                 checkoutTargetBranch(git);
+                progress.major();
+                fetchTarget(git);
+                progress.major();
+                resetTargetHard(git);
                 progress.major();
                 List<Commit> commits = mergePullRequestBranchWithTarget(git);
                 progress.major();
@@ -189,10 +197,19 @@ public class GitService {
         }
 
         private void fetchPullRequestBranch(Git git) throws Exception {
-            notification.sendMessage(request.getKey(), "Fetching pull request branch from GitHub");
+            notifier.message("Fetching pull request branch from GitHub");
             Repository repository = git.getRepository();
             repository.getConfig().setString("remote", "origin", "fetch", "+refs/pull/" + request.getNumber() + "/head:refs/remotes/origin/pr/" + request.getNumber());
             repository.getConfig().save();
+
+            git.fetch()
+                .setRemote("origin")
+                .setProgressMonitor(new NotificationProgressMonitor(request, notification, progress))
+                .call();
+        }
+
+        private void fetchTarget(Git git) throws Exception {
+            notifier.message("Fetching target branch from GitHub");
 
             git.fetch()
                 .setRemote("origin")
@@ -243,12 +260,12 @@ public class GitService {
         }
 
         private void checkoutTargetBranch(Git git) throws Exception {
-            notifier.message("Checking out pull request branch: " + request.getTarget().getBranch());
-            git.checkout().setName(String.valueOf(request.getTarget().getBranch())).call();
+            notifier.message("Checking out target branch: " + request.getTarget().getBranch());
+            git.checkout().setName(request.getTarget().getBranch()).call();
         }
 
         private void checkoutPullRequestBranch(Git git) throws Exception {
-            notifier.message("Checking out pull request branch: " + request.getTarget().getBranch());
+            notifier.message("Checking out pull request branch: " + request.getNumber());
             git.checkout().setName(String.valueOf(request.getNumber())).call();
         }
         
