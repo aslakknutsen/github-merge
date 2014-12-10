@@ -1,3 +1,5 @@
+.openshift_env
+deployments
 # Eclipse
 .project
 .classpath
