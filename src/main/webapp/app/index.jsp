@@ -234,7 +234,7 @@
 			var deferred = Ember.RSVP.defer();
 			var model = [];
 			var resource = collectParams(this);
-			model.socket = new WebSocket('ws://' + window.location.host + '<%=request.getAttribute("BASE_ROOT")%>/api/' + resource.user + '/' + resource.repository + "/" + resource.pullrequest + '/notification')
+			model.socket = new WebSocket('ws://' + window.location.host + ':8000' + '<%=request.getAttribute("BASE_ROOT")%>/api/' + resource.user + '/' + resource.repository + "/" + resource.pullrequest + '/notification')
 			model.socket.onopen = function() {
 				//self.onOpen();
 				deferred.resolve(model);
