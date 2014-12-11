@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>Traveling Merger</title>
-    <base href="<%=request.getAttribute("BASE_ROOT")%>" />
+    <base href="<%=request.getAttribute("BASE_ROOT")%>/" />
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
     <!--[if lt IE 9]>
       <script src='//html5shim.googlecode.com/svn/trunk/html5.js' type='text/javascript'></script>
@@ -152,7 +152,7 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/ember.js/1.9.0-beta.3/ember.min.js"></script>
   <!--<script src="//cdnjs.cloudflare.com/ajax/libs/ember-data.js/1.0.0-beta.11/ember-data.js"></script>-->
   <script src="//cdnjs.cloudflare.com/ajax/libs/hammer.js/1.1.3/hammer.min.js"></script>
-  <script src="/merger/app/js/ember-hammer.js"></script>
+  <script src="/app/js/ember-hammer.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/foundation/5.4.7/js/foundation.min.js"></script>
   <link href="//cdnjs.cloudflare.com/ajax/libs/foundation/5.4.7/css/foundation.min.css" rel="stylesheet"></style>
   <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet"></style>
