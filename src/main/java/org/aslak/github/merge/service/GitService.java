@@ -122,11 +122,13 @@ public class GitService {
         @Override
         public Result<Boolean> doRebase(List<Commit> commits) {
             Git git = null;
-            progress.start("Rebase", 5);
+            progress.start("Rebase", 6);
             try {
                 git = open();
                 progress.major();
                 fetchTarget(git);
+                progress.major();
+                checkoutTargetBranch(git);
                 progress.major();
                 resetTargetHard(git);
                 progress.major();
