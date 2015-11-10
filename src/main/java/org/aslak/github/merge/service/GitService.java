@@ -228,6 +228,7 @@ public class GitService {
             notifier.message("Cloning repository from GitHub " + request.getTarget().toHttpsURL());
             CloneCommand command = Git.cloneRepository()
                         .setBranch(request.getTarget().getBranch())
+                        .setCloneAllBranches(true)
                         .setDirectory(path)
                         .setURI(request.getTarget().toHttpsURL())
                         .setProgressMonitor(new NotificationProgressMonitor(request, notification, progress));
